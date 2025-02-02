@@ -1033,8 +1033,6 @@ const Composer: FC<OwnProps & StateProps> = ({
       }
     }
 
-    const { text, entities } = parseHtmlAsFormattedText(getHtml());
-
     if (currentAttachments.length) {
       sendAttachments({
         attachments: currentAttachments,
@@ -1043,6 +1041,8 @@ const Composer: FC<OwnProps & StateProps> = ({
       });
       return;
     }
+
+    const { text, entities } = parseHtmlAsFormattedText(getHtml());
 
     if (!text && !isForwarding) {
       return;

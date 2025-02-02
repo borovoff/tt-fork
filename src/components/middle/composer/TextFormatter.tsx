@@ -104,6 +104,7 @@ const TextFormatter: FC<OwnProps> = ({
 
     const selectedFormats: ISelectedTextFormats = {};
     let { parentElement } = selectedRange.commonAncestorContainer;
+
     while (parentElement && parentElement.id !== EDITABLE_INPUT_ID) {
       const textFormat = TEXT_FORMAT_BY_TAG_NAME[parentElement.tagName];
       if (textFormat) {
@@ -227,7 +228,6 @@ const TextFormatter: FC<OwnProps> = ({
     document.execCommand(
       'insertHTML', false, `<span class="spoiler" data-entity-type="${ApiMessageEntityTypes.Spoiler}">${text}</span>`,
     );
-    onClose();
   });
 
   const handleBoldText = useLastCallback(() => {

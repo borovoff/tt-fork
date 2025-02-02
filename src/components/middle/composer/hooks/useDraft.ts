@@ -60,6 +60,7 @@ const useDraft = ({
       isTouchedRef.current = true;
     }
   }, [draft, getHtml]);
+
   useEffect(() => {
     isTouchedRef.current = false;
   }, [chatId, threadId]);
@@ -99,7 +100,10 @@ const useDraft = ({
 
     if (chatId === prevChatId && threadId === prevThreadId) {
       if (isTouched && !draft) return; // Prevent reset from other client if we have local edits
-      if (!draft && prevDraft) {
+      // After page reload draft appears and disappears in the same time draft move to prevDraft
+      // Looks like we can setHtml only when the both is empty, because the chat and the thread the same
+      // TODO: figure out what is going on here
+      if (!draft && !prevDraft) {
         setHtml('');
       }
 
