@@ -6,7 +6,7 @@ import React, {
 import type { IAnchorPosition } from '../../../types';
 import { ApiMessageEntityTypes } from '../../../api/types';
 
-import { EDITABLE_INPUT_ID } from '../../../config';
+import { EDITABLE_INPUT_ID, STRICTERDOM_ENABLED } from '../../../config';
 import buildClassName from '../../../util/buildClassName';
 import captureEscKeyListener from '../../../util/captureEscKeyListener';
 import { ensureProtocol } from '../../../util/ensureProtocol';
@@ -24,6 +24,7 @@ import Icon from '../../common/icons/Icon';
 import Button from '../../ui/Button';
 
 import './TextFormatter.scss';
+import {disableStrict} from '../../../lib/fasterdom/stricterdom';
 
 export type OwnProps = {
   isOpen: boolean;
@@ -37,10 +38,12 @@ interface ISelectedTextFormats {
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
-  strikethrough?: boolean;
+  strikeThrough?: boolean;
   monospace?: boolean;
   spoiler?: boolean;
 }
+
+type SimpleFormats = keyof Pick<ISelectedTextFormats, 'italic' | 'underline' | 'strikeThrough'>
 
 const TEXT_FORMAT_BY_TAG_NAME: Record<string, keyof ISelectedTextFormats> = {
   B: 'bold',
@@ -48,7 +51,8 @@ const TEXT_FORMAT_BY_TAG_NAME: Record<string, keyof ISelectedTextFormats> = {
   I: 'italic',
   EM: 'italic',
   U: 'underline',
-  DEL: 'strikethrough',
+  S: 'strikeThrough',
+  STRIKE: 'strikeThrough',
   CODE: 'monospace',
   SPAN: 'spoiler',
 };
@@ -78,7 +82,11 @@ const TextFormatter: FC<OwnProps> = ({
     containerRef,
     onClose,
     true,
+    undefined,
+    false
   );
+
+  useEffect(() => console.log(document.getElementById(EDITABLE_INPUT_ID)), [selectedTextFormats])
 
   useEffect(() => {
     if (isLinkControlOpen) {
@@ -98,12 +106,21 @@ const TextFormatter: FC<OwnProps> = ({
   }, [closeLinkControl, shouldRender]);
 
   useEffect(() => {
+    // sometimes styles are not setted because of error inside stricterdom.ts
+    if (STRICTERDOM_ENABLED) {
+      disableStrict()
+    }
+    console.log(document.getElementById(EDITABLE_INPUT_ID))
+    console.log(selectedRange)
     if (!isOpen || !selectedRange) {
       return;
     }
 
     const selectedFormats: ISelectedTextFormats = {};
-    let { parentElement } = selectedRange.commonAncestorContainer;
+    const { commonAncestorContainer } = selectedRange
+    let parentElement = commonAncestorContainer instanceof HTMLElement ?
+      commonAncestorContainer :
+      commonAncestorContainer.parentElement
 
     while (parentElement && parentElement.id !== EDITABLE_INPUT_ID) {
       const textFormat = TEXT_FORMAT_BY_TAG_NAME[parentElement.tagName];
@@ -190,13 +207,13 @@ const TextFormatter: FC<OwnProps> = ({
       return 'active';
     }
 
-    if (key === 'monospace' || key === 'strikethrough') {
+    if (key === 'monospace' || key === 'strikeThrough') {
       if (Object.keys(selectedTextFormats).some(
         (fKey) => fKey !== key && Boolean(selectedTextFormats[fKey as keyof ISelectedTextFormats]),
       )) {
         return 'disabled';
       }
-    } else if (selectedTextFormats.monospace || selectedTextFormats.strikethrough) {
+    } else if (selectedTextFormats.monospace || selectedTextFormats.strikeThrough) {
       return 'disabled';
     }
 
@@ -204,41 +221,44 @@ const TextFormatter: FC<OwnProps> = ({
   }
 
   const handleSpoilerText = useLastCallback(() => {
-    if (selectedTextFormats.spoiler) {
-      const element = getSelectedElement();
-      if (
-        !selectedRange
-        || !element
-        || element.dataset.entityType !== ApiMessageEntityTypes.Spoiler
-        || !element.textContent
-      ) {
-        return;
-      }
+    if (!selectedRange) {
+      return
+    }
 
-      element.replaceWith(element.textContent);
+    if (selectedTextFormats.spoiler) {
       setSelectedTextFormats((selectedFormats) => ({
         ...selectedFormats,
         spoiler: false,
       }));
 
-      return;
+      return 
     }
 
-    const text = getSelectedText();
-    document.execCommand(
-      'insertHTML', false, `<span class="spoiler" data-entity-type="${ApiMessageEntityTypes.Spoiler}">${text}</span>`,
-    );
+    const span = document.createElement('span') as HTMLSpanElement
+    span.className = 'spoiler'
+    span.dataset.entityType = ApiMessageEntityTypes.Spoiler
+    span.appendChild(selectedRange.extractContents())
+    selectedRange.insertNode(span)
+
+    setSelectedTextFormats((selectedFormats) => ({
+      ...selectedFormats,
+      spoiler: true,
+    }))
   });
 
   const handleBoldText = useLastCallback(() => {
     setSelectedTextFormats((selectedFormats) => {
       // Somehow re-applying 'bold' command to already bold text doesn't work
-      document.execCommand(selectedFormats.bold ? 'removeFormat' : 'bold');
-      Object.keys(selectedFormats).forEach((key) => {
-        if ((key === 'italic' || key === 'underline') && Boolean(selectedFormats[key])) {
-          document.execCommand(key);
-        }
-      });
+      if (selectedFormats.bold) {
+        document.execCommand('removeFormat')
+        Object.keys(selectedFormats).forEach((key) => {
+          if ((key === 'italic' || key === 'underline') && Boolean(selectedFormats[key])) {
+            document.execCommand(key);
+          }
+        })
+      } else {
+        document.execCommand('bold');
+      }
 
       updateSelectedRange();
       return {
@@ -248,49 +268,14 @@ const TextFormatter: FC<OwnProps> = ({
     });
   });
 
-  const handleItalicText = useLastCallback(() => {
-    document.execCommand('italic');
-    updateSelectedRange();
+  const handleSimpleFormat = useLastCallback((format: SimpleFormats) => {
+    document.execCommand(format)
+    updateSelectedRange()
     setSelectedTextFormats((selectedFormats) => ({
       ...selectedFormats,
-      italic: !selectedFormats.italic,
-    }));
-  });
-
-  const handleUnderlineText = useLastCallback(() => {
-    document.execCommand('underline');
-    updateSelectedRange();
-    setSelectedTextFormats((selectedFormats) => ({
-      ...selectedFormats,
-      underline: !selectedFormats.underline,
-    }));
-  });
-
-  const handleStrikethroughText = useLastCallback(() => {
-    if (selectedTextFormats.strikethrough) {
-      const element = getSelectedElement();
-      if (
-        !selectedRange
-        || !element
-        || element.tagName !== 'DEL'
-        || !element.textContent
-      ) {
-        return;
-      }
-
-      element.replaceWith(element.textContent);
-      setSelectedTextFormats((selectedFormats) => ({
-        ...selectedFormats,
-        strikethrough: false,
-      }));
-
-      return;
-    }
-
-    const text = getSelectedText();
-    document.execCommand('insertHTML', false, `<del>${text}</del>`);
-    onClose();
-  });
+      [format]: !selectedFormats[format],
+    }))
+  })
 
   const handleMonospaceText = useLastCallback(() => {
     if (selectedTextFormats.monospace) {
@@ -348,10 +333,10 @@ const TextFormatter: FC<OwnProps> = ({
     const HANDLERS_BY_KEY: Record<string, AnyToVoidFunction> = {
       k: openLinkControl,
       b: handleBoldText,
-      u: handleUnderlineText,
-      i: handleItalicText,
+      u: () => handleSimpleFormat('underline'),
+      i: () => handleSimpleFormat('italic'),
       m: handleMonospaceText,
-      s: handleStrikethroughText,
+      s: () => handleSimpleFormat('strikeThrough'),
       p: handleSpoilerText,
     };
 
@@ -437,7 +422,7 @@ const TextFormatter: FC<OwnProps> = ({
           color="translucent"
           ariaLabel="Italic text"
           className={getFormatButtonClassName('italic')}
-          onClick={handleItalicText}
+          onClick={() => handleSimpleFormat('italic')}
         >
           <Icon name="italic" />
         </Button>
@@ -445,15 +430,15 @@ const TextFormatter: FC<OwnProps> = ({
           color="translucent"
           ariaLabel="Underlined text"
           className={getFormatButtonClassName('underline')}
-          onClick={handleUnderlineText}
+          onClick={() => handleSimpleFormat('underline')}
         >
           <Icon name="underlined" />
         </Button>
         <Button
           color="translucent"
           ariaLabel="Strikethrough text"
-          className={getFormatButtonClassName('strikethrough')}
-          onClick={handleStrikethroughText}
+          className={getFormatButtonClassName('strikeThrough')}
+          onClick={() => handleSimpleFormat('strikeThrough')}
         >
           <Icon name="strikethrough" />
         </Button>

@@ -558,7 +558,7 @@ function processEntity({
     case ApiMessageEntityTypes.Pre:
       return <CodeBlock text={entityText} language={entity.language} noCopy={isProtected} />;
     case ApiMessageEntityTypes.Strike:
-      return <del data-entity-type={entity.type}>{renderNestedMessagePart()}</del>;
+      return <s data-entity-type={entity.type}>{renderNestedMessagePart()}</s>;
     case ApiMessageEntityTypes.TextUrl:
     case ApiMessageEntityTypes.Url:
       return (
@@ -625,7 +625,7 @@ function processEntityAsHtml(
     case ApiMessageEntityTypes.Pre:
       return `\`\`\`${renderText(entity.language || '', ['escape_html'])}<br/>${renderedContent}<br/>\`\`\`<br/>`;
     case ApiMessageEntityTypes.Strike:
-      return `<del>${renderedContent}</del>`;
+      return `<s>${renderedContent}</s>`;
     case ApiMessageEntityTypes.MentionName:
       return `<a
         class="text-entity-link"
