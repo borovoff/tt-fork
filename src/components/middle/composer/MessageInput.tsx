@@ -37,6 +37,7 @@ import Icon from '../../common/icons/Icon';
 import Button from '../../ui/Button';
 import TextTimer from '../../ui/TextTimer';
 import TextFormatter from './TextFormatter.async';
+import {TransformFormattedText} from '../helpers/TransformFormattedText';
 
 const CONTEXT_MENU_CLOSE_DELAY_MS = 100;
 // Focus slows down animation, also it breaks transition layout in Chrome
@@ -173,6 +174,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
   const [isTextFormatterOpen, openTextFormatter, closeTextFormatter] = useFlag();
   const [textFormatterAnchorPosition, setTextFormatterAnchorPosition] = useState<IAnchorPosition>();
   const [selectedRange, setSelectedRange] = useState<Range>();
+  const [formattedText, setFormattedText] = useState(TransformFormattedText.getFormattedText(getHtml()))
   const [isTextFormatterDisabled, setIsTextFormatterDisabled] = useState<boolean>(false);
   const { isMobile } = useAppLayout();
   const isMobileDevice = isMobile && (IS_IOS || IS_ANDROID);
@@ -416,6 +418,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
   }
 
   function handleChange(e: ChangeEvent<HTMLDivElement>) {
+    setFormattedText(ft => TransformFormattedText.getFormattedText(getHtml()))
     const { innerHTML, textContent } = e.currentTarget;
 
     onUpdate(innerHTML === SAFARI_BR ? '' : innerHTML);
@@ -631,6 +634,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
         </div>
       )}
       <TextFormatter
+        formattedText={formattedText}
         isOpen={isTextFormatterOpen}
         anchorPosition={textFormatterAnchorPosition}
         selectedRange={selectedRange}

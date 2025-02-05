@@ -25,8 +25,10 @@ import Button from '../../ui/Button';
 
 import './TextFormatter.scss';
 import {disableStrict} from '../../../lib/fasterdom/stricterdom';
+import {TransformFormattedText} from '../helpers/TransformFormattedText';
 
 export type OwnProps = {
+  formattedText: TransformFormattedText
   isOpen: boolean;
   anchorPosition?: IAnchorPosition;
   selectedRange?: Range;
@@ -59,6 +61,7 @@ const TEXT_FORMAT_BY_TAG_NAME: Record<string, keyof ISelectedTextFormats> = {
 const fragmentEl = document.createElement('div');
 
 const TextFormatter: FC<OwnProps> = ({
+  formattedText,
   isOpen,
   anchorPosition,
   selectedRange,
@@ -86,8 +89,6 @@ const TextFormatter: FC<OwnProps> = ({
     false
   );
 
-  useEffect(() => console.log(document.getElementById(EDITABLE_INPUT_ID)), [selectedTextFormats])
-
   useEffect(() => {
     if (isLinkControlOpen) {
       linkUrlInputRef.current!.focus();
@@ -110,14 +111,20 @@ const TextFormatter: FC<OwnProps> = ({
     if (STRICTERDOM_ENABLED) {
       disableStrict()
     }
-    console.log(document.getElementById(EDITABLE_INPUT_ID))
-    console.log(selectedRange)
+
     if (!isOpen || !selectedRange) {
       return;
     }
 
     const selectedFormats: ISelectedTextFormats = {};
-    const { commonAncestorContainer } = selectedRange
+
+    const { startContainer, startOffset } = selectedRange
+    let { commonAncestorContainer } = selectedRange
+
+    if (startContainer.nodeType === Node.TEXT_NODE && startContainer.textContent?.length === startOffset) {
+      commonAncestorContainer = getRealCAC(selectedRange)
+    }
+
     let parentElement = commonAncestorContainer instanceof HTMLElement ?
       commonAncestorContainer :
       commonAncestorContainer.parentElement
@@ -133,6 +140,20 @@ const TextFormatter: FC<OwnProps> = ({
 
     setSelectedTextFormats(selectedFormats);
   }, [isOpen, selectedRange, openLinkControl]);
+
+  const getRealCAC = ({ startContainer, endContainer, commonAncestorContainer }: Range) => {
+    let start = startContainer
+    while (start.parentNode !== commonAncestorContainer && start.parentNode?.lastChild === start) {
+      start = start.parentNode
+    }
+
+    let end = endContainer
+    while (end.parentNode !== commonAncestorContainer && end.parentNode?.firstChild === end) {
+      end = end.parentNode
+    }
+
+    return start.nextSibling === end ? end : commonAncestorContainer
+  }
 
   const restoreSelection = useLastCallback(() => {
     if (!selectedRange) {
@@ -269,8 +290,19 @@ const TextFormatter: FC<OwnProps> = ({
   });
 
   const handleSimpleFormat = useLastCallback((format: SimpleFormats) => {
+    if (!selectedRange) {
+      return
+    }
+
     document.execCommand(format)
-    updateSelectedRange()
+
+    const { startContainer, startOffset, endOffset, commonAncestorContainer } = selectedRange
+    if (selectedTextFormats[format]) {
+      commonAncestorContainer.normalize()
+      selectedRange.setStart(startContainer, startOffset)
+      selectedRange.setEnd(startContainer, endOffset + startOffset)
+    }
+
     setSelectedTextFormats((selectedFormats) => ({
       ...selectedFormats,
       [format]: !selectedFormats[format],
