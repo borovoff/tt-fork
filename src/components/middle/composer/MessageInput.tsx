@@ -418,10 +418,10 @@ const MessageInput: FC<OwnProps & StateProps> = ({
   }
 
   function handleChange(e: ChangeEvent<HTMLDivElement>) {
-    setFormattedText(ft => TransformFormattedText.getFormattedText(getHtml()))
     const { innerHTML, textContent } = e.currentTarget;
 
     onUpdate(innerHTML === SAFARI_BR ? '' : innerHTML);
+    setFormattedText(ft => TransformFormattedText.getFormattedText(getHtml()))
 
     // Reset focus on the input to remove any active styling when input is cleared
     if (
@@ -634,7 +634,9 @@ const MessageInput: FC<OwnProps & StateProps> = ({
         </div>
       )}
       <TextFormatter
+        setHtml={onUpdate}
         formattedText={formattedText}
+        setFormattedText={setFormattedText}
         isOpen={isTextFormatterOpen}
         anchorPosition={textFormatterAnchorPosition}
         selectedRange={selectedRange}

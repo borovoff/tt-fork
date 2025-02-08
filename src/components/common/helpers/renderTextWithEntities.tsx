@@ -312,9 +312,10 @@ function organizeEntities(entities: ApiMessageEntity[]) {
   const organizedEntityIndexes: Set<number> = new Set();
   const organizedEntities: IOrganizedEntity[] = [];
 
-  entities.forEach((entity, index) => {
+  for (let index = 0; index < entities.length; index++) {
+    const entity = entities[index]
     if (organizedEntityIndexes.has(index)) {
-      return;
+      continue
     }
 
     const organizedEntity = organizeEntity(entity, index, entities, organizedEntityIndexes);
@@ -325,7 +326,7 @@ function organizeEntities(entities: ApiMessageEntity[]) {
 
       organizedEntities.push(organizedEntity);
     }
-  });
+  }
 
   return organizedEntities;
 }
@@ -346,7 +347,21 @@ function organizeEntity(
   // Determine any nested entities inside current entity
   const nestedEntities: IOrganizedEntity[] = [];
   const parsedNestedEntities = entities
-    .filter((e, i) => i > index && e.offset >= offset && e.offset < offset + length)
+    .filter((e, i) => {
+      if (i > index && e.offset >= offset && e.offset < offset + length) {
+        const end = offset + length - 1
+        const innerEnd = e.offset + e.length - 1
+        if (innerEnd > end) {
+          const newLength = end - e.offset + 1
+          entities.push({ ...e, offset: end + 1, length: e.length - newLength })
+          e.length = newLength
+        }
+
+        return true
+      }
+
+      return false
+    })
     .map((e) => organizeEntity(e, entities.indexOf(e), entities, organizedEntityIndexes))
     .filter(Boolean);
 
@@ -558,7 +573,7 @@ function processEntity({
     case ApiMessageEntityTypes.Pre:
       return <CodeBlock text={entityText} language={entity.language} noCopy={isProtected} />;
     case ApiMessageEntityTypes.Strike:
-      return <s data-entity-type={entity.type}>{renderNestedMessagePart()}</s>;
+      return <del data-entity-type={entity.type}>{renderNestedMessagePart()}</del>;
     case ApiMessageEntityTypes.TextUrl:
     case ApiMessageEntityTypes.Url:
       return (
@@ -625,7 +640,7 @@ function processEntityAsHtml(
     case ApiMessageEntityTypes.Pre:
       return `\`\`\`${renderText(entity.language || '', ['escape_html'])}<br/>${renderedContent}<br/>\`\`\`<br/>`;
     case ApiMessageEntityTypes.Strike:
-      return `<s>${renderedContent}</s>`;
+      return `<del>${renderedContent}</del>`;
     case ApiMessageEntityTypes.MentionName:
       return `<a
         class="text-entity-link"
