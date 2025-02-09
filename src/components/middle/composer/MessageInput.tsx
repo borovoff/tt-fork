@@ -38,6 +38,7 @@ import Button from '../../ui/Button';
 import TextTimer from '../../ui/TextTimer';
 import TextFormatter from './TextFormatter.async';
 import {TransformFormattedText} from '../helpers/TransformFormattedText';
+import {getRangeByOffset} from '../helpers/getRangeByOffset';
 
 const CONTEXT_MENU_CLOSE_DELAY_MS = 100;
 // Focus slows down animation, also it breaks transition layout in Chrome
@@ -247,7 +248,19 @@ const MessageInput: FC<OwnProps & StateProps> = ({
     const html = isActive ? getHtml() : '';
 
     if (html !== inputRef.current!.innerHTML) {
+      let offset = 0
+      let length = 0
+      if (selectedRange) {
+        const { textNodeToOffset } = getRangeByOffset(inputRef.current)
+        offset = textNodeToOffset.get(selectedRange.startContainer) + selectedRange.startOffset
+        length = textNodeToOffset.get(selectedRange.endContainer) + selectedRange.endOffset - offset
+      }
       inputRef.current!.innerHTML = html;
+      if (selectedRange) {
+        const { startContainer, endContainer, startOffset, endOffset } = getRangeByOffset(inputRef.current, offset, offset + length)
+        selectedRange.setStart(startContainer, startOffset)
+        selectedRange.setEnd(endContainer, endOffset)
+      }
     }
 
     if (html !== cloneRef.current!.innerHTML) {
@@ -634,7 +647,9 @@ const MessageInput: FC<OwnProps & StateProps> = ({
         </div>
       )}
       <TextFormatter
+        inputRef={inputRef}
         setHtml={onUpdate}
+        getHtml={getHtml}
         formattedText={formattedText}
         setFormattedText={setFormattedText}
         isOpen={isTextFormatterOpen}

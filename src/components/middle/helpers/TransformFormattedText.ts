@@ -72,7 +72,16 @@ export class TransformFormattedText implements ApiFormattedText {
   }
 
   private sort() {
-    this.entities = this.entities?.filter(e => e.length > 0).sort((e1, e2) => e1.offset - e2.offset || e2.length - e1.length)
+    this.entities = TransformFormattedText.ss(this.entities)
+  }
+
+  static ss(entities?: ApiMessageEntity[]) {
+    return entities?.filter(e => e.length > 0).sort((e1, e2) => {
+      if (e1.offset === e2.offset) {
+        return e2.length - e1.length
+      }
+      return e1.offset - e2.offset
+    })
   }
 
   private pushSides(e1: ApiMessageEntity, e2: ApiMessageEntity, i: number) {
@@ -83,11 +92,36 @@ export class TransformFormattedText implements ApiFormattedText {
     }
   }
 
+  // TODO: fix types
+  private unify() {
+    const entityObject = this.entities?.reduce((accumulator, current) => {
+      const { type } = current
+      if (Object.hasOwn(accumulator, type)) {
+        const entities = accumulator[type]
+        const entity = entities[entities.length - 1]
+        if ((entity.offset + entity.length === current.offset) && entity.url === current.url) {
+          entity.length = entity.length + current.length
+        } else {
+          entities.push(current)
+        }
+      } else {
+        accumulator[type] = [current]
+      }
+
+      return { ...accumulator }
+    }, {})
+
+    this.entities = Object.values(entityObject).reduce((accumulator, current) => ([...accumulator, ...current]), [])
+    this.sort()
+  }
+
   recalculateEntities(entity: ApiMessageEntity, add = true) {
     if (!this.entities) {
       this.entities = [entity]
       return
     }
+
+    this.unify()
 
     for (let i = this.entities.length - 1; i >= 0; i--) {
       const e = this.entities[i] as WeakApiMessageEntity

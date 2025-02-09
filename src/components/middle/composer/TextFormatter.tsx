@@ -6,7 +6,7 @@ import React, {
 import type { IAnchorPosition } from '../../../types';
 import { ApiMessageEntityTypes, ApiMessageEntityTypesDefault } from '../../../api/types';
 
-import { EDITABLE_INPUT_ID, STRICTERDOM_ENABLED } from '../../../config';
+import { STRICTERDOM_ENABLED } from '../../../config';
 import buildClassName from '../../../util/buildClassName';
 import captureEscKeyListener from '../../../util/captureEscKeyListener';
 import { ensureProtocol } from '../../../util/ensureProtocol';
@@ -26,9 +26,14 @@ import './TextFormatter.scss';
 import {disableStrict} from '../../../lib/fasterdom/stricterdom';
 import {TransformFormattedText} from '../helpers/TransformFormattedText';
 import {IconName} from '../../../types/icons';
+import {RefObject} from 'react';
+import {Signal} from '../../../util/signals';
+import {getRangeByOffset} from '../helpers/getRangeByOffset';
 
 export type OwnProps = {
+  inputRef: RefObject<HTMLDivElement>
   setHtml: (html: string) => void
+  getHtml: Signal<string>
   formattedText: TransformFormattedText
   setFormattedText: (text: TransformFormattedText) => void
   isOpen: boolean;
@@ -42,10 +47,10 @@ type FormatterApiMessageEntityTypes = ApiMessageEntityTypesDefault | ApiMessageE
 type ISelectedTextFormats = { [key in FormatterApiMessageEntityTypes]?: boolean }
 type Formats = { type: FormatterApiMessageEntityTypes, text: string }[]
 
-let textNodeToOffset = new Map()
-
 const TextFormatter: FC<OwnProps> = ({
+  inputRef,
   setHtml,
+  getHtml,
   formattedText,
   setFormattedText,
   isOpen,
@@ -112,7 +117,7 @@ const TextFormatter: FC<OwnProps> = ({
 
     const { startContainer, startOffset, endContainer, endOffset } = selectedRange
 
-    getStartAndEnd()
+    const { textNodeToOffset } = getRangeByOffset(inputRef.current)
     const offset = textNodeToOffset.get(startContainer) + startOffset
     const length = textNodeToOffset.get(endContainer) + endOffset - offset
     const types = formattedText.getActiveTypes({ offset, length })
@@ -160,47 +165,6 @@ const TextFormatter: FC<OwnProps> = ({
     return selectedTextFormats[key] ? 'active' : undefined
   }
 
-  const getStartAndEnd = (offset?: number, end?: number) => {
-    textNodeToOffset = new Map()
-    let element = document.getElementById(EDITABLE_INPUT_ID) as Node
-    let index = 0
-    let startContainer = element
-    let startOffset = 0
-    let endContainer = element
-    let endOffset = 0
-
-    const checkNode = (node: ChildNode) => {
-      const { nodeType, textContent } = node
-      if (nodeType === Node.COMMENT_NODE) {
-        return
-      }
-
-      if (nodeType === Node.TEXT_NODE && textContent) {
-        textNodeToOffset.set(node, index)
-        const { length } = textContent
-        if (offset !== undefined && end !== undefined) {
-          const nodeEnd = index + length
-          if (index <= offset && offset < nodeEnd) {
-            startContainer = node
-            startOffset = offset - index
-          }
-
-          if (index < end && end <= nodeEnd) {
-            endContainer = node
-            endOffset = end - index
-          }
-        }
-
-        index += length
-      }
-
-      [...node.childNodes].forEach(checkNode)
-    }
-
-    [...element.childNodes].forEach(checkNode)
-
-    return { startContainer, endContainer, startOffset, endOffset }
-  }
 
   const handleChangeFormat = useLastCallback((type: FormatterApiMessageEntityTypes) => {
     if (!selectedRange) {
@@ -209,7 +173,7 @@ const TextFormatter: FC<OwnProps> = ({
 
     const isActive = selectedTextFormats[type]
 
-    getStartAndEnd()
+    const { textNodeToOffset } = getRangeByOffset(inputRef.current)
     const offset = textNodeToOffset.get(selectedRange.startContainer) + selectedRange.startOffset
     const length = textNodeToOffset.get(selectedRange.endContainer) + selectedRange.endOffset - offset
 
@@ -219,17 +183,12 @@ const TextFormatter: FC<OwnProps> = ({
     } else {
       formattedText.recalculateEntities({ type, offset, length }, !isActive)
     }
+    console.log(formattedText.entities)
+    console.log(formattedText.text)
     const html = formattedText.getHtml()
-    console.log(formattedText.entities, formattedText.text)
     console.log(html)
     setHtml(html)
     setFormattedText(formattedText)
-
-    setTimeout(() => {
-      const { startContainer, endContainer, startOffset, endOffset } = getStartAndEnd(offset, offset + length)
-      selectedRange.setStart(startContainer, startOffset)
-      selectedRange.setEnd(endContainer, endOffset)
-    }, 300)
 
     setSelectedTextFormats((selectedFormats) => ({
       ...selectedFormats,

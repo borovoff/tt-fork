@@ -346,24 +346,25 @@ function organizeEntity(
 
   // Determine any nested entities inside current entity
   const nestedEntities: IOrganizedEntity[] = [];
-  const parsedNestedEntities = entities
-    .filter((e, i) => {
-      if (i > index && e.offset >= offset && e.offset < offset + length) {
-        const end = offset + length - 1
-        const innerEnd = e.offset + e.length - 1
-        if (innerEnd > end) {
-          const newLength = end - e.offset + 1
-          entities.push({ ...e, offset: end + 1, length: e.length - newLength })
-          e.length = newLength
-        }
 
-        return true
+  const parsedNestedEntities = []
+  for (let i = 0; i < entities.length; i++) {
+    const e = entities[i]
+    if (i > index && e.offset >= offset && e.offset < offset + length) {
+      const end = offset + length - 1
+      const innerEnd = e.offset + e.length - 1
+      if (innerEnd > end) {
+        const newLength = end - e.offset + 1
+        entities.push({ ...e, offset: end + 1, length: e.length - newLength })
+        e.length = newLength
       }
 
-      return false
-    })
-    .map((e) => organizeEntity(e, entities.indexOf(e), entities, organizedEntityIndexes))
-    .filter(Boolean);
+      const result = organizeEntity(e, entities.indexOf(e), entities, organizedEntityIndexes)
+      if (result) {
+        parsedNestedEntities.push(result)
+      }
+    }
+  }
 
   parsedNestedEntities.forEach((parsedEntity) => {
     let isChanged = false;
