@@ -19,6 +19,7 @@ import CodeBlock from '../code/CodeBlock';
 import CustomEmoji from '../CustomEmoji';
 import SafeLink from '../SafeLink';
 import Spoiler from '../spoiler/Spoiler';
+import {TransformFormattedText} from '../../middle/helpers/TransformFormattedText';
 
 interface IOrganizedEntity {
   entity: ApiMessageEntity;
@@ -357,6 +358,7 @@ function organizeEntity(
         const newLength = end - e.offset + 1
         entities.push({ ...e, offset: end + 1, length: e.length - newLength })
         e.length = newLength
+        entities = TransformFormattedText.ss(entities)
       }
 
       const result = organizeEntity(e, entities.indexOf(e), entities, organizedEntityIndexes)

@@ -76,7 +76,7 @@ export class TransformFormattedText implements ApiFormattedText {
   }
 
   static ss(entities?: ApiMessageEntity[]) {
-    return entities?.filter(e => e.length > 0).sort((e1, e2) => {
+    return entities?.sort((e1, e2) => {
       if (e1.offset === e2.offset) {
         return e2.length - e1.length
       }
