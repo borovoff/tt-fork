@@ -175,7 +175,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
   const [isTextFormatterOpen, openTextFormatter, closeTextFormatter] = useFlag();
   const [textFormatterAnchorPosition, setTextFormatterAnchorPosition] = useState<IAnchorPosition>();
   const [selectedRange, setSelectedRange] = useState<Range>();
-  const [formattedText, setFormattedText] = useState(TransformFormattedText.getFormattedText(getHtml()))
+  const [formattedText, setFormattedText] = useState<TransformFormattedText>()
   const [isTextFormatterDisabled, setIsTextFormatterDisabled] = useState<boolean>(false);
   const { isMobile } = useAppLayout();
   const isMobileDevice = isMobile && (IS_IOS || IS_ANDROID);
@@ -256,6 +256,8 @@ const MessageInput: FC<OwnProps & StateProps> = ({
         length = textNodeToOffset.get(selectedRange.endContainer) + selectedRange.endOffset - offset
       }
       inputRef.current!.innerHTML = html;
+      setFormattedText(TransformFormattedText.getFormattedText(html))
+
       if (selectedRange) {
         const { startContainer, endContainer, startOffset, endOffset } = getRangeByOffset(inputRef.current, offset, offset + length)
         selectedRange.setStart(startContainer, startOffset)
@@ -434,7 +436,6 @@ const MessageInput: FC<OwnProps & StateProps> = ({
     const { innerHTML, textContent } = e.currentTarget;
 
     onUpdate(innerHTML === SAFARI_BR ? '' : innerHTML);
-    setFormattedText(ft => TransformFormattedText.getFormattedText(getHtml()))
 
     // Reset focus on the input to remove any active styling when input is cleared
     if (

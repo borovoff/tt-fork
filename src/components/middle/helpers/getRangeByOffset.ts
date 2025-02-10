@@ -13,6 +13,10 @@ export const getRangeByOffset = (e: HTMLElement | null, offset?: number, end?: n
       return
     }
 
+    if (node instanceof HTMLElement && (node.tagName === 'BR' || node.tagName === 'DIV')) {
+      ++index
+    }
+
     if (nodeType === Node.TEXT_NODE && textContent) {
       textNodeToOffset.set(node, index)
       const { length } = textContent

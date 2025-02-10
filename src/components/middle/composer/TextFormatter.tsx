@@ -43,7 +43,7 @@ export type OwnProps = {
   onClose: () => void;
 };
 
-type FormatterApiMessageEntityTypes = ApiMessageEntityTypesDefault | ApiMessageEntityTypes.TextUrl
+type FormatterApiMessageEntityTypes = ApiMessageEntityTypesDefault | ApiMessageEntityTypes.TextUrl | ApiMessageEntityTypes.Blockquote
 type ISelectedTextFormats = { [key in FormatterApiMessageEntityTypes]?: boolean }
 type Formats = { type: FormatterApiMessageEntityTypes, text: string }[]
 
@@ -65,7 +65,8 @@ const TextFormatter: FC<OwnProps> = ({
     { type: ApiMessageEntityTypes.Underline, text: 'Underlined' },
     { type: ApiMessageEntityTypes.Strike, text: 'Strikethrough' },
     { type: ApiMessageEntityTypes.Code, text: 'Monospace' },
-    { type: ApiMessageEntityTypes.Spoiler, text: 'Spoiler' }
+    { type: ApiMessageEntityTypes.Spoiler, text: 'Spoiler' },
+    { type: ApiMessageEntityTypes.Blockquote, text: 'Quote' }
   ]
   // eslint-disable-next-line no-null/no-null
   const containerRef = useRef<HTMLDivElement>(null);
@@ -120,7 +121,7 @@ const TextFormatter: FC<OwnProps> = ({
     const { textNodeToOffset } = getRangeByOffset(inputRef.current)
     const offset = textNodeToOffset.get(startContainer) + startOffset
     const length = textNodeToOffset.get(endContainer) + endOffset - offset
-    const types = formattedText.getActiveTypes({ offset, length })
+    const types = formattedText?.getActiveTypes({ offset, length })
 
     if (types) {
       const fs = types.reduce((accumulator, current) => {
@@ -165,7 +166,6 @@ const TextFormatter: FC<OwnProps> = ({
     return selectedTextFormats[key] ? 'active' : undefined
   }
 
-
   const handleChangeFormat = useLastCallback((type: FormatterApiMessageEntityTypes) => {
     if (!selectedRange) {
       return
@@ -204,7 +204,8 @@ const TextFormatter: FC<OwnProps> = ({
       i: () => handleChangeFormat(ApiMessageEntityTypes.Italic),
       m: () => handleChangeFormat(ApiMessageEntityTypes.Code),
       s: () => handleChangeFormat(ApiMessageEntityTypes.Strike),
-      p: () => handleChangeFormat(ApiMessageEntityTypes.Spoiler)
+      p: () => handleChangeFormat(ApiMessageEntityTypes.Spoiler),
+      '.': () => handleChangeFormat(ApiMessageEntityTypes.Blockquote)
     }
 
     const handler = HANDLERS_BY_KEY[getKeyFromEvent(e)]
