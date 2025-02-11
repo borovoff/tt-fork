@@ -297,11 +297,6 @@ const MessageInput: FC<OwnProps & StateProps> = ({
   });
 
   function checkSelection() {
-    // Disable the formatter on iOS devices for now.
-    if (IS_IOS) {
-      return false;
-    }
-
     const selection = window.getSelection();
     if (!selection || !selection.rangeCount || isContextMenuOpenRef.current) {
       closeTextFormatter();
