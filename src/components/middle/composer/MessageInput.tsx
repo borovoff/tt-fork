@@ -246,6 +246,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
   const htmlRef = useRef(getHtml());
   useLayoutEffect(() => {
     const html = isActive ? getHtml() : '';
+    setFormattedText(TransformFormattedText.getFormattedText(html))
 
     if (html !== inputRef.current!.innerHTML) {
       let offset = 0
@@ -256,7 +257,6 @@ const MessageInput: FC<OwnProps & StateProps> = ({
         length = textNodeToOffset.get(selectedRange.endContainer) + selectedRange.endOffset - offset
       }
       inputRef.current!.innerHTML = html;
-      setFormattedText(TransformFormattedText.getFormattedText(html))
 
       if (selectedRange) {
         const { startContainer, endContainer, startOffset, endOffset } = getRangeByOffset(inputRef.current, offset, offset + length)
