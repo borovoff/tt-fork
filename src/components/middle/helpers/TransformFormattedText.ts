@@ -19,7 +19,7 @@ export class TransformFormattedText implements ApiFormattedText {
   }
 
   getHtml() {
-    return getTextWithEntitiesAsHtml(this)
+    return getTextWithEntitiesAsHtml({ ...this, entities: this.getSlicedEntities() })
   }
 
   getActiveTypes(entity: Interval) {
@@ -33,6 +33,33 @@ export class TransformFormattedText implements ApiFormattedText {
 
       return offset1 >= offset2 && end1 <= end2
     })
+  }
+
+  private getSlicedEntities() {
+    let entities = this.entities?.map(e => ({ ...e})) ?? []
+
+    for (let i = 0; i < entities.length; i++) {
+      const { offset, length } = entities[i]
+      const newEntities = []
+      for (let j = i + 1; j < entities.length; j++) {
+        const innerEntity = entities[j]
+        const end = offset + length
+        if (innerEntity.offset < end) {
+          const innerEnd = innerEntity.offset + innerEntity.length
+          if (innerEnd > end) {
+            const newLength = end - innerEntity.offset
+            newEntities.push({ ...innerEntity, offset: end, length: innerEntity.length - newLength })
+            innerEntity.length = newLength
+          }
+        } else {
+          break
+        }
+      }
+      entities.push(...newEntities)
+      entities = TransformFormattedText.ss(entities) ?? []
+    }
+
+    return entities
   }
 
   private isOverlapping(entity1: Interval, entity2: ApiMessageEntity) {
