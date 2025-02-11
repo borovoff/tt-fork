@@ -19,7 +19,6 @@ import CodeBlock from '../code/CodeBlock';
 import CustomEmoji from '../CustomEmoji';
 import SafeLink from '../SafeLink';
 import Spoiler from '../spoiler/Spoiler';
-import {TransformFormattedText} from '../../middle/helpers/TransformFormattedText';
 
 interface IOrganizedEntity {
   entity: ApiMessageEntity;
@@ -313,10 +312,9 @@ function organizeEntities(entities: ApiMessageEntity[]) {
   const organizedEntityIndexes: Set<number> = new Set();
   const organizedEntities: IOrganizedEntity[] = [];
 
-  for (let index = 0; index < entities.length; index++) {
-    const entity = entities[index]
+  entities.forEach((entity, index) => {
     if (organizedEntityIndexes.has(index)) {
-      continue
+      return;
     }
 
     const organizedEntity = organizeEntity(entity, index, entities, organizedEntityIndexes);
@@ -327,7 +325,7 @@ function organizeEntities(entities: ApiMessageEntity[]) {
 
       organizedEntities.push(organizedEntity);
     }
-  }
+  });
 
   return organizedEntities;
 }
@@ -347,26 +345,10 @@ function organizeEntity(
 
   // Determine any nested entities inside current entity
   const nestedEntities: IOrganizedEntity[] = [];
-
-  const parsedNestedEntities = []
-  for (let i = 0; i < entities.length; i++) {
-    const e = entities[i]
-    if (i > index && e.offset >= offset && e.offset < offset + length) {
-      const end = offset + length - 1
-      const innerEnd = e.offset + e.length - 1
-      if (innerEnd > end) {
-        const newLength = end - e.offset + 1
-        entities.push({ ...e, offset: end + 1, length: e.length - newLength })
-        e.length = newLength
-        entities = TransformFormattedText.ss(entities)
-      }
-
-      const result = organizeEntity(e, entities.indexOf(e), entities, organizedEntityIndexes)
-      if (result) {
-        parsedNestedEntities.push(result)
-      }
-    }
-  }
+  const parsedNestedEntities = entities
+    .filter((e, i) => i > index && e.offset >= offset && e.offset < offset + length)
+    .map((e) => organizeEntity(e, entities.indexOf(e), entities, organizedEntityIndexes))
+    .filter(Boolean);
 
   parsedNestedEntities.forEach((parsedEntity) => {
     let isChanged = false;
