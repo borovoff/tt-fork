@@ -40,6 +40,8 @@ import TextFormatter from './TextFormatter.async';
 import {TransformFormattedText} from '../helpers/TransformFormattedText';
 import {getRangeByOffset} from '../helpers/getRangeByOffset';
 import {MessageInputHistory} from '../helpers/MessageInputHistory';
+import {MarkdownParser} from '../../../util/MarkdownParser';
+import {parseTest, simpleTest, verySimple} from '../../../util/test';
 
 const CONTEXT_MENU_CLOSE_DELAY_MS = 100;
 // Focus slows down animation, also it breaks transition layout in Chrome
@@ -450,6 +452,9 @@ const MessageInput: FC<OwnProps & StateProps> = ({
   function handleChange(e: ChangeEvent<HTMLDivElement>) {
     const { innerHTML, textContent } = e.currentTarget;
 
+    //const parser = new MarkdownParser()
+    //const ft = new TransformFormattedText(parser.parse(parseTest))
+    
     onUpdate(innerHTML === SAFARI_BR ? '' : innerHTML);
 
     const ft = TransformFormattedText.getFormattedText(getHtml())
