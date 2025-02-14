@@ -22,7 +22,7 @@ export const getRangeByOffset = (e: HTMLElement | null, offset?: number, end?: n
       const { length } = textContent
       if (offset !== undefined && end !== undefined) {
         const nodeEnd = index + length
-        if (index <= offset && offset < nodeEnd) {
+        if (index <= offset && offset <= nodeEnd) {
           startContainer = node
           startOffset = offset - index
         }

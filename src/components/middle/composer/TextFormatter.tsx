@@ -26,20 +26,20 @@ import './TextFormatter.scss';
 import {disableStrict} from '../../../lib/fasterdom/stricterdom';
 import {TransformFormattedText} from '../helpers/TransformFormattedText';
 import {IconName} from '../../../types/icons';
-import {RefObject} from 'react';
-import {Signal} from '../../../util/signals';
+import {MutableRefObject, RefObject} from 'react';
 import {getRangeByOffset} from '../helpers/getRangeByOffset';
+import {MessageInputHistory} from '../helpers/MessageInputHistory';
 
 export type OwnProps = {
+  selectionOffsetRef: MutableRefObject<{ offset: number, length: number }>
+  historyRef: RefObject<MessageInputHistory>
   inputRef: RefObject<HTMLDivElement>
   setHtml: (html: string) => void
-  getHtml: Signal<string>
-  formattedText: TransformFormattedText
+  formattedText?: TransformFormattedText
   setFormattedText: (text: TransformFormattedText) => void
   isOpen: boolean;
   anchorPosition?: IAnchorPosition;
   selectedRange?: Range;
-  setSelectedRange: (range: Range) => void;
   onClose: () => void;
 };
 
@@ -48,15 +48,15 @@ type ISelectedTextFormats = { [key in FormatterApiMessageEntityTypes]?: boolean 
 type Formats = { type: FormatterApiMessageEntityTypes, text: string }[]
 
 const TextFormatter: FC<OwnProps> = ({
+  selectionOffsetRef,
+  historyRef,
   inputRef,
   setHtml,
-  getHtml,
   formattedText,
   setFormattedText,
   isOpen,
   anchorPosition,
   selectedRange,
-  setSelectedRange,
   onClose,
 }) => {
   const formats: Formats = [
@@ -167,7 +167,7 @@ const TextFormatter: FC<OwnProps> = ({
   }
 
   const handleChangeFormat = useLastCallback((type: FormatterApiMessageEntityTypes) => {
-    if (!selectedRange) {
+    if (!selectedRange || !formattedText) {
       return
     }
 
@@ -176,6 +176,9 @@ const TextFormatter: FC<OwnProps> = ({
     const { textNodeToOffset } = getRangeByOffset(inputRef.current)
     const offset = textNodeToOffset.get(selectedRange.startContainer) + selectedRange.startOffset
     const length = textNodeToOffset.get(selectedRange.endContainer) + selectedRange.endOffset - offset
+    selectionOffsetRef.current = { offset, length }
+
+    const { entities, text } = formattedText
 
     if (type === ApiMessageEntityTypes.TextUrl) {
       const url = linkUrl ? (ensureProtocol(linkUrl) || '').split('%').map(encodeURI).join('%') : linkUrl
@@ -183,6 +186,9 @@ const TextFormatter: FC<OwnProps> = ({
     } else {
       formattedText.recalculateEntities({ type, offset, length }, !isActive)
     }
+
+    historyRef.current?.add(formattedText, { entities, text })
+
     console.log(formattedText.entities)
     console.log(formattedText.text)
     const html = formattedText.getHtml()

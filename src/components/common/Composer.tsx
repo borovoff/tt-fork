@@ -175,6 +175,7 @@ import Icon from './icons/Icon';
 import ReactionAnimatedEmoji from './reactions/ReactionAnimatedEmoji';
 
 import './Composer.scss';
+import {MessageInputHistory} from '../middle/helpers/MessageInputHistory';
 
 type ComposerType = 'messageList' | 'story';
 
@@ -421,6 +422,7 @@ const Composer: FC<OwnProps & StateProps> = ({
 
   // eslint-disable-next-line no-null/no-null
   const storyReactionRef = useRef<HTMLButtonElement>(null);
+  const historyRef = useRef(new MessageInputHistory())
 
   const [getHtml, setHtml] = useSignal('');
   const [isMounted, setIsMounted] = useState(false);
@@ -738,6 +740,7 @@ const Composer: FC<OwnProps & StateProps> = ({
 
   const resetComposer = useLastCallback((shouldPreserveInput = false) => {
     if (!shouldPreserveInput) {
+      historyRef.current = new MessageInputHistory()
       setHtml('');
     }
 
@@ -1827,6 +1830,7 @@ const Composer: FC<OwnProps & StateProps> = ({
             />
           )}
           <MessageInput
+            historyRef={historyRef}
             ref={inputRef}
             id={inputId}
             editableInputId={editableInputId}
