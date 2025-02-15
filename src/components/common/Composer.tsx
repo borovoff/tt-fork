@@ -1640,6 +1640,7 @@ const Composer: FC<OwnProps & StateProps> = ({
         />
       )}
       <AttachmentModal
+        historyRef={historyRef}
         chatId={chatId}
         threadId={threadId}
         canShowCustomSendMenu={canShowCustomSendMenu}

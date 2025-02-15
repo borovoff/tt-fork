@@ -438,6 +438,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
       const h = historyRef.current
       const result = e.shiftKey ? h.next(formattedText) : h.previous(formattedText)
       if (result) {
+        handleCloseTextFormatter()
         const { text, entities, offset } = result
         formattedText.entities = entities
         formattedText.text = text

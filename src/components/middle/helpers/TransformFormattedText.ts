@@ -1,4 +1,4 @@
-import {ApiFormattedText, ApiMessageEntity, ApiMessageEntityTextUrl, ApiMessageEntityTypes, ApiMessageEntityTypesDefault} from "../../../api/types";
+import {ApiFormattedText, ApiMessageEntity, ApiMessageEntityTypes} from "../../../api/types";
 import parseHtmlAsFormattedText from "../../../util/parseHtmlAsFormattedText";
 import {getTextWithEntitiesAsHtml} from "../../common/helpers/renderTextWithEntities";
 
@@ -15,7 +15,7 @@ export class TransformFormattedText implements ApiFormattedText {
   }
 
   static getFormattedText(html: string) {
-    return new TransformFormattedText(parseHtmlAsFormattedText(html))
+    return new TransformFormattedText(parseHtmlAsFormattedText(html, false, false, false))
   }
 
   getHtml() {

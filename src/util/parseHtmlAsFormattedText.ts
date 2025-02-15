@@ -22,13 +22,15 @@ export const ENTITY_CLASS_BY_NODE_NAME: Record<string, ApiMessageEntityTypes> = 
 const MAX_TAG_DEEPNESS = 30;
 
 export default function parseHtmlAsFormattedText(
-  html: string, withMarkdownLinks = false, skipMarkdown = false,
+  html: string, withMarkdownLinks = false, skipMarkdown = false, trim = true
 ): ApiFormattedText {
   const fragment = document.createElement('div');
   fragment.innerHTML = skipMarkdown ? html
     : withMarkdownLinks ? parseMarkdown(parseMarkdownLinks(html)) : parseMarkdown(html);
   fixImageContent(fragment);
-  const text = fragment.innerText.trim().replace(/\u200b+/g, '');
+  const { innerText } = fragment
+  const t = trim ? innerText.trim() : innerText
+  const text = t.replace(/\u200b+/g, '');
   const trimShift = fragment.innerText.indexOf(text[0]);
   let textIndex = -trimShift;
   let recursionDeepness = 0;

@@ -6,7 +6,6 @@ import React, {
 import type { IAnchorPosition } from '../../../types';
 import { ApiMessageEntityTypes, ApiMessageEntityTypesDefault } from '../../../api/types';
 
-import { STRICTERDOM_ENABLED } from '../../../config';
 import buildClassName from '../../../util/buildClassName';
 import captureEscKeyListener from '../../../util/captureEscKeyListener';
 import { ensureProtocol } from '../../../util/ensureProtocol';
@@ -23,7 +22,6 @@ import Icon from '../../common/icons/Icon';
 import Button from '../../ui/Button';
 
 import './TextFormatter.scss';
-import {disableStrict} from '../../../lib/fasterdom/stricterdom';
 import {TransformFormattedText} from '../helpers/TransformFormattedText';
 import {IconName} from '../../../types/icons';
 import {MutableRefObject, RefObject} from 'react';
@@ -107,11 +105,6 @@ const TextFormatter: FC<OwnProps> = ({
   }, [closeLinkControl, shouldRender]);
 
   useEffect(() => {
-    // sometimes styles are not setted because of error inside stricterdom.ts
-    if (STRICTERDOM_ENABLED) {
-      disableStrict()
-    }
-
     if (!isOpen || !selectedRange) {
       return;
     }
