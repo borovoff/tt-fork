@@ -42,6 +42,7 @@ import {getRangeByOffset} from '../helpers/getRangeByOffset';
 import {MessageInputHistory} from '../helpers/MessageInputHistory';
 import {MarkdownParser} from '../../../util/MarkdownParser';
 import {parseTest, simpleTest, verySimple} from '../../../util/test';
+import {getOffsetByRange} from '../helpers/getOffsetByRange';
 
 const CONTEXT_MENU_CLOSE_DELAY_MS = 100;
 // Focus slows down animation, also it breaks transition layout in Chrome
@@ -258,6 +259,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
 
     if (html !== inputRef.current!.innerHTML) {
       inputRef.current!.innerHTML = html;
+      setFormattedText(TransformFormattedText.getFormattedText(html))
 
       const { offset, length } = selectionOffsetRef.current
       const { startContainer, endContainer, startOffset, endOffset } = getRangeByOffset(inputRef.current, offset, offset + length)
@@ -270,9 +272,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
         const range = new Range()
         range.setStart(startContainer, startOffset)
         range.setEnd(endContainer, endOffset)
-        const selection = document.getSelection()
-        selection?.removeAllRanges()
-        selection?.addRange(range)
+        addRange(range)
       }
     }
 
@@ -402,6 +402,39 @@ const MessageInput: FC<OwnProps & StateProps> = ({
     document.addEventListener('keydown', handleCloseContextMenu);
   }
 
+  const addRange = (range: Range) => {
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+  }
+
+  const tryToRunOut = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    e.target.addEventListener('keyup', processSelectionWithTimeout, { once: true });
+
+    if (!formattedText || !inputRef.current) {
+      return
+    }
+
+    const range = window.getSelection()!.getRangeAt(0)
+    const { offset } = getOffsetByRange(inputRef.current, range)
+    if (offset === formattedText.text.length) {
+      const types = formattedText.getTypesByOffset(offset)
+      if (types?.length) {
+        let symbol = ' '
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          symbol = '\n'
+        }
+        const textNode = document.createTextNode(symbol)
+        inputRef.current.append(textNode)
+        range.selectNode(textNode)
+        range.collapse(false)
+        addRange(range)
+        setFormattedText(TransformFormattedText.getFormattedText(inputRef.current.innerHTML))
+      }
+    }
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     // https://levelup.gitconnected.com/javascript-events-handlers-keyboard-and-load-events-1b3e46a6b0c3#1960
     const { isComposing } = e;
@@ -418,18 +451,18 @@ const MessageInput: FC<OwnProps & StateProps> = ({
     }
 
     if (!isComposing && e.key === 'Enter' && !e.shiftKey) {
-      if (
-        !isMobileDevice
-        && (
-          (messageSendKeyCombo === 'enter' && !e.shiftKey)
-          || (messageSendKeyCombo === 'ctrl-enter' && (e.ctrlKey || e.metaKey))
-        )
-      ) {
+      if (!isMobileDevice && 
+          ((messageSendKeyCombo === 'enter' && !e.shiftKey) || 
+          (messageSendKeyCombo === 'ctrl-enter' && (e.ctrlKey || e.metaKey)))) {
         e.preventDefault();
 
         closeTextFormatter();
         onSend();
+      } else if (isMobileDevice) {
+        tryToRunOut(e)
       }
+    } else if ((e.key === 'Enter' && e.shiftKey) || e.key === 'ArrowRight') {
+      tryToRunOut(e)
     } else if (!isComposing && e.key === 'ArrowUp' && !html && !e.metaKey && !e.ctrlKey && !e.altKey) {
       e.preventDefault();
       editLastMessage();

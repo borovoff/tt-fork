@@ -25,8 +25,8 @@ import './TextFormatter.scss';
 import {TransformFormattedText} from '../helpers/TransformFormattedText';
 import {IconName} from '../../../types/icons';
 import {MutableRefObject, RefObject} from 'react';
-import {getRangeByOffset} from '../helpers/getRangeByOffset';
 import {MessageInputHistory} from '../helpers/MessageInputHistory';
+import {getOffsetByRange} from '../helpers/getOffsetByRange';
 
 export type OwnProps = {
   selectionOffsetRef: MutableRefObject<{ offset: number, length: number }>
@@ -109,11 +109,7 @@ const TextFormatter: FC<OwnProps> = ({
       return;
     }
 
-    const { startContainer, startOffset, endContainer, endOffset } = selectedRange
-
-    const { textNodeToOffset } = getRangeByOffset(inputRef.current)
-    const offset = textNodeToOffset.get(startContainer) + startOffset
-    const length = textNodeToOffset.get(endContainer) + endOffset - offset
+    const { offset, length } = getOffsetByRange(inputRef.current, selectedRange)
     const types = formattedText?.getActiveTypes({ offset, length })
 
     if (types) {
@@ -166,9 +162,7 @@ const TextFormatter: FC<OwnProps> = ({
 
     const isActive = selectedTextFormats[type]
 
-    const { textNodeToOffset } = getRangeByOffset(inputRef.current)
-    const offset = textNodeToOffset.get(selectedRange.startContainer) + selectedRange.startOffset
-    const length = textNodeToOffset.get(selectedRange.endContainer) + selectedRange.endOffset - offset
+    const { offset, length } = getOffsetByRange(inputRef.current, selectedRange)
     selectionOffsetRef.current = { offset, length }
 
     const { entities, text } = formattedText

@@ -22,6 +22,10 @@ export class TransformFormattedText implements ApiFormattedText {
     return getTextWithEntitiesAsHtml({ ...this, entities: this.getSlicedEntities() })
   }
 
+  getTypesByOffset(offset: number) {
+    return this.entities?.filter(e => e.offset <= offset && offset <= e.offset + e.length)
+  }
+
   getActiveTypes(entity: Interval) {
     return this.entities?.filter(e => {
       const result = this.isOverlapping(entity, e)
