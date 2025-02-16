@@ -175,7 +175,8 @@ import Icon from './icons/Icon';
 import ReactionAnimatedEmoji from './reactions/ReactionAnimatedEmoji';
 
 import './Composer.scss';
-import {MessageInputHistory} from '../middle/helpers/MessageInputHistory';
+import {textHistory} from '../middle/helpers/TextHistory';
+import {formattedText} from '../middle/helpers/FormattedText';
 
 type ComposerType = 'messageList' | 'story';
 
@@ -422,7 +423,6 @@ const Composer: FC<OwnProps & StateProps> = ({
 
   // eslint-disable-next-line no-null/no-null
   const storyReactionRef = useRef<HTMLButtonElement>(null);
-  const historyRef = useRef(new MessageInputHistory())
 
   const [getHtml, setHtml] = useSignal('');
   const [isMounted, setIsMounted] = useState(false);
@@ -740,7 +740,8 @@ const Composer: FC<OwnProps & StateProps> = ({
 
   const resetComposer = useLastCallback((shouldPreserveInput = false) => {
     if (!shouldPreserveInput) {
-      historyRef.current = new MessageInputHistory()
+      textHistory.reinit()
+      formattedText.reinit()
       setHtml('');
     }
 
@@ -1640,7 +1641,6 @@ const Composer: FC<OwnProps & StateProps> = ({
         />
       )}
       <AttachmentModal
-        historyRef={historyRef}
         chatId={chatId}
         threadId={threadId}
         canShowCustomSendMenu={canShowCustomSendMenu}
@@ -1831,7 +1831,6 @@ const Composer: FC<OwnProps & StateProps> = ({
             />
           )}
           <MessageInput
-            historyRef={historyRef}
             ref={inputRef}
             id={inputId}
             editableInputId={editableInputId}

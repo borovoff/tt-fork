@@ -7,23 +7,37 @@ interface History {
   entities: EntitiesDifference
 }
 
-export class MessageInputHistory {
+export class TextHistory {
   private currentIndex = -1
   private history: History[] = []
 
+  reinit() {
+    this.currentIndex = -1
+    this.history = []
+  }
+
   add(next: ApiFormattedText, previous?: ApiFormattedText) {
+    const textDiff = TextDifference.diff(previous?.text ?? '', next.text)
+    const entityDiff = EntitiesDifference.diff(previous?.entities ?? [], next.entities)
+
+    if (textDiff.next === '' && textDiff.previous === '' &&
+        entityDiff.next.length === 0 && entityDiff.previous.length === 0) {
+      return
+    }
+
     if (this.currentIndex < this.history.length - 1) {
       this.history.splice(this.currentIndex + 1)
     }
-    const textDiff = TextDifference.diff(previous?.text ?? '', next.text)
+
     const previousDiff = this.history?.[this.history.length - 1]
-    if (textDiff.next !== ' ' && textDiff.next !== '' && textDiff.previous === '' && previousDiff &&
-        previousDiff.text.previous === '' && previousDiff.text.next !== '') {
+    if (!textDiff.next.startsWith(' ') && textDiff.next !== '' && textDiff.previous === '' && previousDiff &&
+        previousDiff.text.previous === '' && previousDiff.text.next !== '' && !previousDiff.text.next.endsWith(' ') &&
+        previousDiff.text.offset + previousDiff.text.next.length === textDiff.offset)  {
       previousDiff.text.next += textDiff.next
     } else {
       this.history.push({
         text: textDiff,
-        entities: EntitiesDifference.diff(previous?.entities ?? [], next.entities)
+        entities: entityDiff
       })
     }
     this.currentIndex = this.history.length - 1
@@ -55,3 +69,5 @@ export class MessageInputHistory {
     }
   }
 }
+
+export const textHistory = new TextHistory()

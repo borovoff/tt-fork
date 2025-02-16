@@ -1,5 +1,5 @@
 import {ApiMessageEntity} from "../../../api/types"
-import {TransformFormattedText} from "./TransformFormattedText"
+import {FormattedText} from "./FormattedText"
 
 export class EntitiesDifference {
   previous!: ApiMessageEntity[]
@@ -22,12 +22,12 @@ export class EntitiesDifference {
   static previous({ previous, next }: EntitiesDifference, current: ApiMessageEntity[] = []) {
     const nextSet = new Set(next.map((e) => EntitiesDifference.hashify(e)))
     const filteredCurrent = current.filter((e) => !nextSet.has(EntitiesDifference.hashify(e)))
-    return TransformFormattedText.ss([...filteredCurrent, ...previous])
+    return FormattedText.ss([...filteredCurrent, ...previous])
   }
 
   static next({ previous, next }: EntitiesDifference, current: ApiMessageEntity[] = []) {
     const previousSet = new Set(previous.map((e) => EntitiesDifference.hashify(e)))
     const filteredCurrent = current.filter((e) => !previousSet.has(EntitiesDifference.hashify(e)))
-    return TransformFormattedText.ss([...filteredCurrent, ...next])
+    return FormattedText.ss([...filteredCurrent, ...next])
   }
 }

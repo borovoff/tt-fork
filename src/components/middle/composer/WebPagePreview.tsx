@@ -32,6 +32,8 @@ import MenuItem from '../../ui/MenuItem';
 import WebPage from '../message/WebPage';
 
 import './WebPagePreview.scss';
+import {FormattedText, formattedText} from '../helpers/FormattedText';
+import {textHistory} from '../helpers/TextHistory';
 
 type OwnProps = {
   chatId: string;
@@ -80,14 +82,20 @@ const WebPagePreview: FC<OwnProps & StateProps> = ({
   const isSmallerMedia = attachmentSettings.webPageMediaSize === 'small';
 
   const detectLinkDebounced = useDebouncedResolver(() => {
-    const formattedText = parseHtmlAsFormattedText(getHtml());
-    const linkEntity = formattedText.entities?.find((entity): entity is ApiMessageEntityTextUrl => (
+    const ft = FormattedText.parse(getHtml());
+    if (formattedText.skipUpdate) {
+      formattedText.skipUpdate = false
+    } else {
+      textHistory.add(ft, formattedText)
+      formattedText.reinit(ft)
+    }
+    const linkEntity = ft.entities?.find((entity): entity is ApiMessageEntityTextUrl => (
       entity.type === ApiMessageEntityTypes.TextUrl
     ));
 
-    formattedTextWithLinkRef.current = formattedText;
+    formattedTextWithLinkRef.current = ft;
 
-    return linkEntity?.url || formattedText.text.match(RE_LINK)?.[0];
+    return linkEntity?.url || ft.text.match(RE_LINK)?.[0];
   }, [getHtml], DEBOUNCE_MS, true);
 
   const getLink = useDerivedSignal(detectLinkDebounced, [detectLinkDebounced, getHtml], true);

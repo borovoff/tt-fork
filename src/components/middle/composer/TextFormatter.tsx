@@ -22,19 +22,16 @@ import Icon from '../../common/icons/Icon';
 import Button from '../../ui/Button';
 
 import './TextFormatter.scss';
-import {TransformFormattedText} from '../helpers/TransformFormattedText';
+import {formattedText} from '../helpers/FormattedText';
 import {IconName} from '../../../types/icons';
 import {MutableRefObject, RefObject} from 'react';
-import {MessageInputHistory} from '../helpers/MessageInputHistory';
+import {textHistory} from '../helpers/TextHistory';
 import {getOffsetByRange} from '../helpers/getOffsetByRange';
 
 export type OwnProps = {
   selectionOffsetRef: MutableRefObject<{ offset: number, length: number }>
-  historyRef: RefObject<MessageInputHistory>
   inputRef: RefObject<HTMLDivElement>
   setHtml: (html: string) => void
-  formattedText?: TransformFormattedText
-  setFormattedText: (text: TransformFormattedText) => void
   isOpen: boolean;
   anchorPosition?: IAnchorPosition;
   selectedRange?: Range;
@@ -47,11 +44,8 @@ type Formats = { type: FormatterApiMessageEntityTypes, text: string }[]
 
 const TextFormatter: FC<OwnProps> = ({
   selectionOffsetRef,
-  historyRef,
   inputRef,
   setHtml,
-  formattedText,
-  setFormattedText,
   isOpen,
   anchorPosition,
   selectedRange,
@@ -156,7 +150,7 @@ const TextFormatter: FC<OwnProps> = ({
   }
 
   const handleChangeFormat = useLastCallback((type: FormatterApiMessageEntityTypes) => {
-    if (!selectedRange || !formattedText) {
+    if (!selectedRange) {
       return
     }
 
@@ -174,14 +168,13 @@ const TextFormatter: FC<OwnProps> = ({
       formattedText.recalculateEntities({ type, offset, length }, !isActive)
     }
 
-    historyRef.current?.add(formattedText, { entities, text })
+    textHistory.add(formattedText, { entities, text })
 
     console.log(formattedText.entities)
     console.log(formattedText.text)
     const html = formattedText.getHtml()
     console.log(html)
     setHtml(html)
-    setFormattedText(formattedText)
 
     setSelectedTextFormats((selectedFormats) => ({
       ...selectedFormats,

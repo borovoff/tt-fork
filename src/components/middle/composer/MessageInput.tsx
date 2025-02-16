@@ -1,4 +1,4 @@
-import type { ChangeEvent, MutableRefObject, RefObject } from 'react';
+import type { ChangeEvent, RefObject } from 'react';
 import type { FC } from '../../../lib/teact/teact';
 import React, {
   getIsHeavyAnimating,
@@ -37,12 +37,13 @@ import Icon from '../../common/icons/Icon';
 import Button from '../../ui/Button';
 import TextTimer from '../../ui/TextTimer';
 import TextFormatter from './TextFormatter.async';
-import {TransformFormattedText} from '../helpers/TransformFormattedText';
+import {formattedText} from '../helpers/FormattedText';
 import {getRangeByOffset} from '../helpers/getRangeByOffset';
-import {MessageInputHistory} from '../helpers/MessageInputHistory';
+import {textHistory} from '../helpers/TextHistory';
 import {MarkdownParser} from '../../../util/MarkdownParser';
 import {parseTest, simpleTest, verySimple} from '../../../util/test';
 import {getOffsetByRange} from '../helpers/getOffsetByRange';
+import getKeyFromEvent from '../../../util/getKeyFromEvent';
 
 const CONTEXT_MENU_CLOSE_DELAY_MS = 100;
 // Focus slows down animation, also it breaks transition layout in Chrome
@@ -53,7 +54,6 @@ const SCROLLER_CLASS = 'input-scroller';
 const INPUT_WRAPPER_CLASS = 'message-input-wrapper';
 
 type OwnProps = {
-  historyRef: MutableRefObject<MessageInputHistory>
   ref?: RefObject<HTMLDivElement>;
   id: string;
   chatId: string;
@@ -117,7 +117,6 @@ function clearSelection() {
 }
 
 const MessageInput: FC<OwnProps & StateProps> = ({
-  historyRef,
   ref,
   id,
   chatId,
@@ -181,7 +180,6 @@ const MessageInput: FC<OwnProps & StateProps> = ({
   const [isTextFormatterOpen, openTextFormatter, closeTextFormatter] = useFlag();
   const [textFormatterAnchorPosition, setTextFormatterAnchorPosition] = useState<IAnchorPosition>();
   const [selectedRange, setSelectedRange] = useState<Range>();
-  const [formattedText, setFormattedText] = useState<TransformFormattedText>()
   const [isTextFormatterDisabled, setIsTextFormatterDisabled] = useState<boolean>(false);
   const { isMobile } = useAppLayout();
   const isMobileDevice = isMobile && (IS_IOS || IS_ANDROID);
@@ -253,13 +251,8 @@ const MessageInput: FC<OwnProps & StateProps> = ({
   const htmlRef = useRef(getHtml());
   useLayoutEffect(() => {
     const html = isActive ? getHtml() : '';
-    if (!formattedText && html) {
-      setFormattedText(TransformFormattedText.getFormattedText(html))
-    }
-
     if (html !== inputRef.current!.innerHTML) {
       inputRef.current!.innerHTML = html;
-      setFormattedText(TransformFormattedText.getFormattedText(html))
 
       const { offset, length } = selectionOffsetRef.current
       const { startContainer, endContainer, startOffset, endOffset } = getRangeByOffset(inputRef.current, offset, offset + length)
@@ -411,7 +404,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
   const tryToRunOut = (e: React.KeyboardEvent<HTMLDivElement>) => {
     e.target.addEventListener('keyup', processSelectionWithTimeout, { once: true });
 
-    if (!formattedText || !inputRef.current) {
+    if (!inputRef.current) {
       return
     }
 
@@ -430,7 +423,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
         range.selectNode(textNode)
         range.collapse(false)
         addRange(range)
-        setFormattedText(TransformFormattedText.getFormattedText(inputRef.current.innerHTML))
+        formattedText.recalculate(inputRef.current.innerHTML)
       }
     }
   }
@@ -466,16 +459,16 @@ const MessageInput: FC<OwnProps & StateProps> = ({
     } else if (!isComposing && e.key === 'ArrowUp' && !html && !e.metaKey && !e.ctrlKey && !e.altKey) {
       e.preventDefault();
       editLastMessage();
-    } else if ((e.metaKey || e.ctrlKey) && e.key === 'z' && formattedText) {
+    } else if ((e.metaKey || e.ctrlKey) && e.code === 'KeyZ') {
       e.preventDefault()
-      const h = historyRef.current
-      const result = e.shiftKey ? h.next(formattedText) : h.previous(formattedText)
+      const result = e.shiftKey ? textHistory.next(formattedText) : textHistory.previous(formattedText)
       if (result) {
         handleCloseTextFormatter()
         const { text, entities, offset } = result
         formattedText.entities = entities
         formattedText.text = text
         selectionOffsetRef.current = { offset, length: 0 }
+        formattedText.skipUpdate = true
         onUpdate(formattedText.getHtml())
       }
     } else {
@@ -490,10 +483,6 @@ const MessageInput: FC<OwnProps & StateProps> = ({
     //const ft = new TransformFormattedText(parser.parse(parseTest))
     
     onUpdate(innerHTML === SAFARI_BR ? '' : innerHTML);
-
-    const ft = TransformFormattedText.getFormattedText(getHtml())
-    historyRef.current.add(ft, formattedText)
-    setFormattedText(ft)
 
     // Reset focus on the input to remove any active styling when input is cleared
     if (
@@ -707,11 +696,8 @@ const MessageInput: FC<OwnProps & StateProps> = ({
       )}
       <TextFormatter
         selectionOffsetRef={selectionOffsetRef}
-        historyRef={historyRef}
         inputRef={inputRef}
         setHtml={onUpdate}
-        formattedText={formattedText}
-        setFormattedText={setFormattedText}
         isOpen={isTextFormatterOpen}
         anchorPosition={textFormatterAnchorPosition}
         selectedRange={selectedRange}

@@ -59,11 +59,8 @@ import MessageInput from './MessageInput';
 import SymbolMenuButton from './SymbolMenuButton';
 
 import styles from './AttachmentModal.module.scss';
-import {MutableRefObject} from 'react';
-import {MessageInputHistory} from '../helpers/MessageInputHistory';
 
 export type OwnProps = {
-  historyRef: MutableRefObject<MessageInputHistory>
   chatId: string;
   threadId: ThreadId;
   attachments: ApiAttachment[];
@@ -112,7 +109,6 @@ const DROP_LEAVE_TIMEOUT_MS = 150;
 const MAX_LEFT_CHARS_TO_SHOW = 100;
 
 const AttachmentModal: FC<OwnProps & StateProps> = ({
-  historyRef,
   chatId,
   threadId,
   attachments,
@@ -678,7 +674,6 @@ const AttachmentModal: FC<OwnProps & StateProps> = ({
               forceDarkTheme={forceDarkTheme}
             />
             <MessageInput
-              historyRef={historyRef}
               ref={inputRef}
               id={ATTACHMENT_MODAL_INPUT_ID}
               chatId={chatId}

@@ -5,17 +5,29 @@ import {getTextWithEntitiesAsHtml} from "../../common/helpers/renderTextWithEnti
 type Interval = { offset: number, length: number }
 type WeakApiMessageEntity = ApiMessageEntity & { url?: string }
 
-export class TransformFormattedText implements ApiFormattedText {
+export class FormattedText implements ApiFormattedText {
   text: string
   entities?: ApiMessageEntity[]
+  skipUpdate = false
 
   constructor({text, entities}: ApiFormattedText) {
     this.text = text
     this.entities = entities
   }
 
-  static getFormattedText(html: string) {
-    return new TransformFormattedText(parseHtmlAsFormattedText(html, false, false, false))
+  reinit({ text, entities }: ApiFormattedText = { text: '', entities: undefined }) {
+    this.text = text
+    this.entities = entities
+  }
+
+  static parse(html: string) {
+    return parseHtmlAsFormattedText(html, false, false, false)
+  }
+
+  recalculate(html: string) {
+    const { text, entities } = FormattedText.parse(html)
+    this.text = text
+    this.entities = entities
   }
 
   getHtml() {
@@ -60,7 +72,7 @@ export class TransformFormattedText implements ApiFormattedText {
         }
       }
       entities.push(...newEntities)
-      entities = TransformFormattedText.ss(entities) ?? []
+      entities = FormattedText.ss(entities) ?? []
     }
 
     return entities
@@ -103,7 +115,7 @@ export class TransformFormattedText implements ApiFormattedText {
   }
 
   private sort() {
-    this.entities = TransformFormattedText.ss(this.entities)
+    this.entities = FormattedText.ss(this.entities)
   }
 
   static ss(entities?: ApiMessageEntity[]) {
@@ -191,3 +203,5 @@ export class TransformFormattedText implements ApiFormattedText {
     this.sort()
   }
 }
+
+export const formattedText = new FormattedText({ text: '' })
