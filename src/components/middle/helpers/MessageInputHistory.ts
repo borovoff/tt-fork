@@ -15,10 +15,17 @@ export class MessageInputHistory {
     if (this.currentIndex < this.history.length - 1) {
       this.history.splice(this.currentIndex + 1)
     }
-    this.history.push({
-      text: TextDifference.diff(previous?.text ?? '', next.text),
-      entities: EntitiesDifference.diff(previous?.entities ?? [], next.entities)
-    })
+    const textDiff = TextDifference.diff(previous?.text ?? '', next.text)
+    const previousDiff = this.history?.[this.history.length - 1]
+    if (textDiff.next !== ' ' && textDiff.next !== '' && textDiff.previous === '' && previousDiff &&
+        previousDiff.text.previous === '' && previousDiff.text.next !== '') {
+      previousDiff.text.next += textDiff.next
+    } else {
+      this.history.push({
+        text: textDiff,
+        entities: EntitiesDifference.diff(previous?.entities ?? [], next.entities)
+      })
+    }
     this.currentIndex = this.history.length - 1
   }
 
