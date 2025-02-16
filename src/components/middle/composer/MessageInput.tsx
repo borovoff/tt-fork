@@ -43,7 +43,6 @@ import {textHistory} from '../helpers/TextHistory';
 import {MarkdownParser} from '../../../util/MarkdownParser';
 import {parseTest, simpleTest, verySimple} from '../../../util/test';
 import {getOffsetByRange} from '../helpers/getOffsetByRange';
-import getKeyFromEvent from '../../../util/getKeyFromEvent';
 
 const CONTEXT_MENU_CLOSE_DELAY_MS = 100;
 // Focus slows down animation, also it breaks transition layout in Chrome

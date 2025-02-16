@@ -13,7 +13,6 @@ import { ApiMessageEntityTypes } from '../../../api/types';
 import { RE_LINK_TEMPLATE } from '../../../config';
 import { selectNoWebPage, selectTabState, selectTheme } from '../../../global/selectors';
 import buildClassName from '../../../util/buildClassName';
-import parseHtmlAsFormattedText from '../../../util/parseHtmlAsFormattedText';
 
 import { useDebouncedResolver } from '../../../hooks/useAsyncResolvers';
 import useContextMenuHandlers from '../../../hooks/useContextMenuHandlers';

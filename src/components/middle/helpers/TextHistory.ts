@@ -16,11 +16,17 @@ export class TextHistory {
     this.history = []
   }
 
+  private isNotBreak(previous: string, next: string, symbol = ' ') {
+    return !(next.startsWith(symbol) || previous.endsWith(symbol) && previous !== symbol)
+  }
+
   add(next: ApiFormattedText, previous?: ApiFormattedText) {
     const textDiff = TextDifference.diff(previous?.text ?? '', next.text)
     const entityDiff = EntitiesDifference.diff(previous?.entities ?? [], next.entities)
+    const n = textDiff.next
+    const p = textDiff.previous
 
-    if (textDiff.next === '' && textDiff.previous === '' &&
+    if (n === '' && p === '' &&
         entityDiff.next.length === 0 && entityDiff.previous.length === 0) {
       return
     }
@@ -30,10 +36,17 @@ export class TextHistory {
     }
 
     const previousDiff = this.history?.[this.history.length - 1]
-    if (!textDiff.next.startsWith(' ') && textDiff.next !== '' && textDiff.previous === '' && previousDiff &&
-        previousDiff.text.previous === '' && previousDiff.text.next !== '' && !previousDiff.text.next.endsWith(' ') &&
-        previousDiff.text.offset + previousDiff.text.next.length === textDiff.offset)  {
-      previousDiff.text.next += textDiff.next
+    let appendToPrevious = false
+    if (n !== '' && p === '' && previousDiff) {
+      const { next, previous, offset } = previousDiff.text
+      if (previous === '' && next !== '' && offset + next.length === textDiff.offset &&
+          this.isNotBreak(next, n) && this.isNotBreak(next, n, '\n')) {
+        appendToPrevious = true
+      }
+    }
+
+    if (appendToPrevious) {
+      previousDiff.text.next += n
     } else {
       this.history.push({
         text: textDiff,

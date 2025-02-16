@@ -31,7 +31,7 @@ export class FormattedText implements ApiFormattedText {
   }
 
   getHtml() {
-    return getTextWithEntitiesAsHtml({ ...this, entities: this.getSlicedEntities() })
+    return getTextWithEntitiesAsHtml({ text: this.text, entities: this.getSlicedEntities() })
   }
 
   getTypesByOffset(offset: number) {

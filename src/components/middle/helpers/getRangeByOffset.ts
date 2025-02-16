@@ -7,6 +7,24 @@ export const getRangeByOffset = (e: HTMLElement | null, offset?: number, end?: n
   let endContainer = element
   let endOffset = 0
 
+  const setOffset = (node: Node, length: number, textNode = true) => {
+    textNodeToOffset.set(node, index)
+    if (offset !== undefined && end !== undefined) {
+      const nodeEnd = index + length
+      if (index <= offset && offset <= nodeEnd) {
+        startContainer = node
+        startOffset = textNode ? offset - index : 0
+      }
+
+      if (index < end && end <= nodeEnd) {
+        endContainer = node
+        endOffset = textNode ? end - index : 0
+      }
+    }
+
+    index += length
+  }
+
   const checkNode = (node: ChildNode) => {
     const { nodeType, textContent } = node
     if (nodeType === Node.COMMENT_NODE) {
@@ -14,26 +32,11 @@ export const getRangeByOffset = (e: HTMLElement | null, offset?: number, end?: n
     }
 
     if (node instanceof HTMLElement && (node.tagName === 'BR' || node.tagName === 'DIV')) {
-      ++index
+      setOffset(node, 1, false)
     }
 
     if (nodeType === Node.TEXT_NODE && textContent) {
-      textNodeToOffset.set(node, index)
-      const { length } = textContent
-      if (offset !== undefined && end !== undefined) {
-        const nodeEnd = index + length
-        if (index <= offset && offset <= nodeEnd) {
-          startContainer = node
-          startOffset = offset - index
-        }
-
-        if (index < end && end <= nodeEnd) {
-          endContainer = node
-          endOffset = end - index
-        }
-      }
-
-      index += length
+      setOffset(node, textContent.length)
     }
 
     [...node.childNodes].forEach(checkNode)
