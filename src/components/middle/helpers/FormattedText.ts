@@ -31,7 +31,7 @@ export class FormattedText implements ApiFormattedText {
   }
 
   getHtml() {
-    return getTextWithEntitiesAsHtml({ text: this.text, entities: this.getSlicedEntities() })
+    return getTextWithEntitiesAsHtml({ text: this.text, entities: this.getSlicedEntities() }).replaceAll('<br>', '\n')
   }
 
   getTypesByOffset(offset: number) {
