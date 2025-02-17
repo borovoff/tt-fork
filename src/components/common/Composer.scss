@@ -609,6 +609,7 @@
   flex-grow: 1;
 
   .form-control {
+    display: inline-block;
     padding: calc((var(--base-height, 3.5rem) - var(--composer-text-size, 1rem) * 1.375) / 2) 0.875rem;
     overflow: hidden;
     height: auto;
@@ -646,6 +647,7 @@
     line-height: 1.3125;
     font-size: var(--composer-text-size, 1rem);
     top: calc((3.25rem - var(--composer-text-size, 1rem) * 1.375) / 2);
+    left: 0;
     bottom: auto;
     white-space: nowrap;
     overflow: hidden;

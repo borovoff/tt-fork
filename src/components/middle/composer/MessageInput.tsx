@@ -634,7 +634,6 @@ const MessageInput: FC<OwnProps & StateProps> = ({
       >
         <div className={inputScrollerContentClass}>
           <div
-            style="display: inline-block"
             ref={inputRef}
             id={editableInputId || EDITABLE_INPUT_ID}
             className={className}
