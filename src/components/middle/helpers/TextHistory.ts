@@ -65,7 +65,7 @@ export class TextHistory {
     return {
       text: TextDifference.next(h.text, text),
       entities: EntitiesDifference.next(h.entities, entities),
-      offset: h.text.offset + h.text.next.length
+      ...this.getOffsetAndLength(h, h.text.offset + h.text.next.length)
     }
   }
 
@@ -78,8 +78,19 @@ export class TextHistory {
     return {
       text: TextDifference.previous(h.text, text),
       entities: EntitiesDifference.previous(h.entities, entities),
-      offset: h.text.offset + h.text.previous.length
+      ...this.getOffsetAndLength(h, h.text.offset + h.text.previous.length)
     }
+  }
+
+  private getOffsetAndLength({ text, entities }: History, offset: number) {
+    let length = 0
+    if (text.next === '' && text.previous === '') {
+      const entity = entities.next?.[0] ?? entities.previous?.[0]
+      offset = entity?.offset ?? 0
+      length = entity?.length ?? 0
+    }
+
+    return { offset, length }
   }
 }
 

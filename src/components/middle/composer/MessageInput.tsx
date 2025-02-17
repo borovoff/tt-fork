@@ -37,7 +37,7 @@ import Icon from '../../common/icons/Icon';
 import Button from '../../ui/Button';
 import TextTimer from '../../ui/TextTimer';
 import TextFormatter from './TextFormatter.async';
-import {formattedText} from '../helpers/FormattedText';
+import {FormattedText, formattedText} from '../helpers/FormattedText';
 import {getRangeByOffset} from '../helpers/getRangeByOffset';
 import {textHistory} from '../helpers/TextHistory';
 import {MarkdownParser} from '../../../util/MarkdownParser';
@@ -260,7 +260,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
         selectedRange.setEnd(endContainer, endOffset)
       }
 
-      if (!selectedRange || selectedRange.collapsed) {
+      if (!selectedRange || selectedRange.collapsed || formattedText.skipUpdate) {
         const range = new Range()
         range.setStart(startContainer, startOffset)
         range.setEnd(endContainer, endOffset)
@@ -463,10 +463,10 @@ const MessageInput: FC<OwnProps & StateProps> = ({
       const result = e.shiftKey ? textHistory.next(formattedText) : textHistory.previous(formattedText)
       if (result) {
         handleCloseTextFormatter()
-        const { text, entities, offset } = result
+        const { text, entities, offset, length } = result
         formattedText.entities = entities
         formattedText.text = text
-        selectionOffsetRef.current = { offset, length: 0 }
+        selectionOffsetRef.current = { offset, length }
         formattedText.skipUpdate = true
         onUpdate(formattedText.getHtml())
       }
@@ -479,7 +479,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
     const { innerHTML, textContent } = e.currentTarget;
 
     //const parser = new MarkdownParser()
-    //const ft = new TransformFormattedText(parser.parse(parseTest))
+    //const ft = new FormattedText(parser.parse(parseTest))
     
     onUpdate(innerHTML === SAFARI_BR ? '' : innerHTML);
 
