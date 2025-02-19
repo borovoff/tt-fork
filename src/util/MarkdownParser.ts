@@ -1,69 +1,32 @@
-import {ApiMessageEntity, ApiMessageEntityBlockquote, ApiMessageEntityTypes} from "../api/types"
+import {ApiMessageEntityBlockquote, ApiMessageEntityTypes} from "../api/types"
+import {BaseParser, CutEntity, MarkdownSymbol, OpenEntities} from "./BaseParser"
+import {UrlParser} from "./UrlParser"
 
 
-interface KeyType<M> {
-  '*': M,
-  '_': M,
-  '__': M,
-  '~': M,
-  '>': M,
-  '```': M,
-  '`': M,
-  '||': M
-}
-
-type OpenEntities = KeyType<ApiMessageEntity>
-type MarkdownSymbol = keyof OpenEntities
-
-
-const charToEntityType = {
-  '*': ApiMessageEntityTypes.Bold,
-  '_': ApiMessageEntityTypes.Italic,
-  '__': ApiMessageEntityTypes.Underline,
-  '~': ApiMessageEntityTypes.Strike,
-  '>': ApiMessageEntityTypes.Blockquote,
-  '```': ApiMessageEntityTypes.Pre,
-  '`': ApiMessageEntityTypes.Code,
-  '||': ApiMessageEntityTypes.Spoiler
-}
-
-
-export class MarkdownParser {
+export class MarkdownParser extends BaseParser {
+  protected maxLength = 10000
   private openEntities: Partial<OpenEntities> = {}
-  private entities = []
-  private i = 0
-  private text = ''
+  private entities: CutEntity[] = []
 
-  private charAt = (shift = 0) => {
-    return this.text.charAt(this.i + shift)
+  constructor(text: string) {
+    super(text)
+    console.log(text)
   }
 
-  parse(text: string) {
-    this.text = text
-    let counter = 0
-    while(this.i < this.text.length && counter < 10000) {
-      ++counter
-      const char = this.charAt() as MarkdownSymbol
-      const a = this.charToAction[char]
-      if (a) {
-        a(char)
-      } else {
-        this.i++
-      }
-    }
+  getFormattedText() {
+    this.parse()
+
     console.log(this.entities)
     console.log(this.text)
-    console.log(text)
 
     return { entities: this.entities, text: this.text }
   }
 
-  private simple = (symbol: MarkdownSymbol, additionAction = () => {}) => {
+  private simple = (symbol: MarkdownSymbol) => {
     const entity = this.openEntities[symbol]
     this.slice(symbol.length)
     if (entity) {
       this.addEntity(entity, symbol)
-      additionAction()
     } else {
       this.addToOpenEntities(symbol)
     }
@@ -91,31 +54,20 @@ export class MarkdownParser {
 
   private code = () => {
     if (this.charAt(1) === '`' && this.charAt(2) === '`' && this.charAt(-1) === '\n') {
-      this.simple('```', () => {
-        this.openEntities = {}
-      })
+      this.simple('```')
     } else {
       this.simple('`')
     }
   }
 
-  private escape = () => {
-    this.slice(1)
-    this.i++
-  }
-
-  private slice = (length: number) => {
-    this.text = this.text.slice(0, this.i) + this.text.slice(this.i + length)
-  }
-
-  private addEntity = (entity: ApiMessageEntity, symbol: keyof OpenEntities) => {
+  private addEntity = (entity: CutEntity, symbol: MarkdownSymbol) => {
     const length = this.i - entity.offset
     this.entities.push({ ...entity, length })
     delete this.openEntities[symbol]
   }
 
-  private addToOpenEntities = (symbol: string) => {
-    this.openEntities[symbol] = { type: charToEntityType[symbol], offset: this.i }
+  private addToOpenEntities = (symbol: MarkdownSymbol, type?: ApiMessageEntityTypes) => {
+    this.openEntities[symbol] = { type: type ? type : this.charToEntityType[symbol], offset: this.i, length: -1 }
   }
 
   private underline = () => {
@@ -136,7 +88,33 @@ export class MarkdownParser {
     }
   }
 
-  private charToAction = {
+  private startUrl = () => {
+    if (this.openEntities.hasOwnProperty('[')) {
+      this.error('Try to add a new url before finishing the previous one')
+    }
+
+    if (this.charAt(-1) === '!') {
+      --this.i
+      this.slice(2)
+      this.addToOpenEntities('[', ApiMessageEntityTypes.CustomEmoji)
+    } else {
+      this.slice(1)
+      this.addToOpenEntities('[')
+    }
+  }
+
+  private endUrl = () => {
+    const entity = this.openEntities['[']
+    if (entity && this.charAt(1) === '(') {
+      const { e, i } = new UrlParser(this.text, entity, this.i).getEntity()
+      this.slice(i)
+      this.addEntity(e, '[')
+    } else {
+      this.error('Missing an open url parenthesis or wrong char after it')
+    }
+  }
+
+  protected charToAction = {
     '*': this.simple,
     '_': this.underline,
     '~': this.simple,
@@ -144,6 +122,8 @@ export class MarkdownParser {
     '\\': this.escape,
     '`': this.code,
     '>': this.quote,
-    '\n': this.newLine
+    '\n': this.newLine,
+    '[': this.startUrl,
+    ']': this.endUrl
   }
 }

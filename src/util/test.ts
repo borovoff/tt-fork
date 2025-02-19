@@ -1,9 +1,10 @@
 export const verySimple = `*bold \\*text*`
-const links = `
-[inline URL](http://www.example.com/)
+export const links = `
 [inline mention of a user](tg://user?id=123456789)
-![👍](tg://emoji?id=5368324170671202286)
 `
+export const emoji = `![👍](tg://emoji?id=5368324170671202286)`
+
+export const urlLink = `[inline URL](http://www.example.com/)`
 export const simpleTest = `*bold \\*text*
 _italic \\*text_
 __underline__
@@ -16,6 +17,8 @@ __underline__
 ~strikethrough~
 ||spoiler||
 *bold _italic bold ~italic bold strikethrough ||italic bold strikethrough spoiler||~ __underline italic bold___ bold*
+[inline URL](http://www.example.com/)
+![👍](tg://emoji?id=5368324170671202286)
 \`inline fixed-width code\`
 \`\`\`
 pre-formatted fixed-width code block
@@ -34,3 +37,10 @@ pre-formatted fixed-width code block written in the Python programming language
 >Hidden by default part of the expandable block quotation started
 >Expandable block quotation continued
 >The last line of the expandable block quotation with the expandability mark||`
+
+export const tests = [
+  verySimple,
+  emoji,
+  simpleTest,
+  parseTest
+]

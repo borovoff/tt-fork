@@ -7,7 +7,7 @@ import React, {
 } from '../../../lib/teact/teact';
 import { getActions, withGlobal } from '../../../global';
 
-import type { ApiInputMessageReplyInfo } from '../../../api/types';
+import { ApiMessageEntityTypes, type ApiInputMessageReplyInfo } from '../../../api/types';
 import type { IAnchorPosition, ISettings, ThreadId } from '../../../types';
 import type { Signal } from '../../../util/signals';
 
@@ -21,7 +21,7 @@ import parseEmojiOnlyString from '../../../util/emoji/parseEmojiOnlyString';
 import focusEditableElement from '../../../util/focusEditableElement';
 import { debounce } from '../../../util/schedulers';
 import {
-  IS_ANDROID, IS_EMOJI_SUPPORTED, IS_IOS, IS_TOUCH_ENV,
+  IS_ANDROID, IS_EMOJI_SUPPORTED, IS_IOS, IS_SAFARI, IS_TOUCH_ENV,
 } from '../../../util/windowEnvironment';
 import renderText from '../../common/helpers/renderText';
 import { isSelectionInsideInput } from './helpers/selection';
@@ -41,7 +41,7 @@ import {FormattedText, formattedText} from '../helpers/FormattedText';
 import {getRangeByOffset} from '../helpers/getRangeByOffset';
 import {textHistory} from '../helpers/TextHistory';
 import {MarkdownParser} from '../../../util/MarkdownParser';
-import {parseTest, simpleTest, verySimple} from '../../../util/test';
+import {emoji, parseTest, simpleTest, urlLink, verySimple} from '../../../util/test';
 import {getOffsetByRange} from '../helpers/getOffsetByRange';
 
 const CONTEXT_MENU_CLOSE_DELAY_MS = 100;
@@ -423,7 +423,22 @@ const MessageInput: FC<OwnProps & StateProps> = ({
         range.collapse(false)
         addRange(range)
         formattedText.recalculate(inputRef.current.innerHTML)
+        return true
       }
+    }
+  }
+
+  const safariQuoutNewLine = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!IS_SAFARI) {
+      return
+    }
+
+    const range = window.getSelection()!.getRangeAt(0)
+    const { offset } = getOffsetByRange(inputRef.current, range)
+    const types = formattedText.getTypesByOffset(offset)
+    if (types?.find(e => e.type === ApiMessageEntityTypes.Blockquote)) {
+      e.preventDefault()
+      document.execCommand('insertHTML', false, '\n')
     }
   }
 
@@ -451,9 +466,11 @@ const MessageInput: FC<OwnProps & StateProps> = ({
         closeTextFormatter();
         onSend();
       } else if (isMobileDevice) {
-        tryToRunOut(e)
+        tryToRunOut(e) ?? safariQuoutNewLine(e)
       }
-    } else if ((e.key === 'Enter' && e.shiftKey) || e.key === 'ArrowRight') {
+    } else if (e.key === 'Enter' && e.shiftKey) {
+      tryToRunOut(e) ?? safariQuoutNewLine(e)
+    } else if (e.key === 'ArrowRight') {
       tryToRunOut(e)
     } else if (!isComposing && e.key === 'ArrowUp' && !html && !e.metaKey && !e.ctrlKey && !e.altKey) {
       e.preventDefault();
@@ -478,10 +495,13 @@ const MessageInput: FC<OwnProps & StateProps> = ({
   function handleChange(e: ChangeEvent<HTMLDivElement>) {
     const { innerHTML, textContent } = e.currentTarget;
 
-    //const parser = new MarkdownParser()
-    //const ft = new FormattedText(parser.parse(parseTest))
+    const parser = new MarkdownParser(parseTest)
+    const ft = new FormattedText(parser.getFormattedText())
+    //
+    //console.log(innerHTML)
     
-    onUpdate(innerHTML === SAFARI_BR ? '' : innerHTML);
+    //onUpdate(innerHTML === SAFARI_BR ? '' : innerHTML);
+    onUpdate(innerHTML === SAFARI_BR ? '' : ft.getHtml());
 
     // Reset focus on the input to remove any active styling when input is cleared
     if (
