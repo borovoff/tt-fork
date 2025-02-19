@@ -38,27 +38,26 @@ export abstract class BaseParser {
 
   protected parse() {
     let counter = 0
-    try {
-      while(this.i < this.text.length) {
-        if (counter > this.maxLength) {
-          this.error(`Maximum string length is exceeded, more than ${this.maxLength}`)
-        }
-        ++counter
-        const char = this.charAt() as MarkdownActions
-        const a = this.charToAction[char]
-        if (a) {
-          const result = a(char as MarkdownSymbol)
-          if (result) {
-            return
-          }
-        } else {
-          this.i++
-        }
+    while(this.i < this.text.length) {
+      if (counter > this.maxLength) {
+        this.error(`Maximum string length is exceeded, more than ${this.maxLength}`)
       }
-    } catch (e) {
-      // TODO: here error can be highlighted in input
-      console.error(e)
+      ++counter
+      const char = this.charAt() as MarkdownActions
+      const a = this.charToAction[char]
+      if (a) {
+        const result = a(char as MarkdownSymbol)
+        if (result) {
+          return
+        }
+      } else {
+        this.i++
+      }
     }
+  }
+
+  protected isPre = () => {
+    return this.charAt(1) === '`' && this.charAt(2) === '`'
   }
 
   protected charAt = (shift = 0) => {

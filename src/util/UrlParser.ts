@@ -1,24 +1,19 @@
 import {ApiMessageEntityMentionName, ApiMessageEntityTextUrl, ApiMessageEntityTypes} from "../api/types";
 import {BaseParser, CutEntity} from "./BaseParser";
+import {SpecialParser} from "./SpecialParser";
 
 
-export class UrlParser extends BaseParser {
+export class UrlParser extends SpecialParser {
   protected maxLength = 100
-  private entity: CutEntity
-  private startIndex: number
 
   constructor(text: string, entity: CutEntity, i: number) {
-    super(text)
-    this.entity = entity
-    this.i = i
-    this.startIndex = i
+    super(text, entity, i)
   }
 
   getEntity() {
-    this.slice(2)
     this.parse()
 
-    return { e: this.entity, i: this.i - this.startIndex + 2 }
+    return { e: this.entity, offset: this.i - this.startIndex }
   }
 
   private endUrl = () => {

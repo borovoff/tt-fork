@@ -1,5 +1,6 @@
-import {ApiMessageEntityBlockquote, ApiMessageEntityTypes} from "../api/types"
+import {ApiMessageEntityBlockquote, ApiMessageEntityPre, ApiMessageEntityTypes} from "../api/types"
 import {BaseParser, CutEntity, MarkdownSymbol, OpenEntities} from "./BaseParser"
+import {CodeParser} from "./CodeParser"
 import {UrlParser} from "./UrlParser"
 
 
@@ -14,10 +15,17 @@ export class MarkdownParser extends BaseParser {
   }
 
   getFormattedText() {
-    this.parse()
+    try {
+      this.parse()
 
-    console.log(this.entities)
-    console.log(this.text)
+      console.log(this.entities)
+      console.log(this.text)
+
+      this.checkUnclosedTags('Detected unclosed tag after parsing')
+    } catch (e) {
+      // TODO: here error can be highlighted in input
+      console.error(e)
+    }
 
     return { entities: this.entities, text: this.text }
   }
@@ -53,10 +61,33 @@ export class MarkdownParser extends BaseParser {
   }
 
   private code = () => {
-    if (this.charAt(1) === '`' && this.charAt(2) === '`' && this.charAt(-1) === '\n') {
-      this.simple('```')
-    } else {
-      this.simple('`')
+    this.checkUnclosedTags('Detected unclosed tag before code block')
+
+    let shift = 1
+    let symbol: MarkdownSymbol = '`'
+    const isPre = this.isPre()
+    if (isPre) {
+      shift = 3
+      symbol = '```'
+    }
+
+    const entity = this.addToOpenEntities(symbol)
+    this.slice(shift)
+    const offset = new CodeParser(this.text, entity, this.i).getOffset()
+    const length = (entity as ApiMessageEntityPre).language?.length
+    this.slice(length !== undefined ? length + 1 : 0)
+    this.i += offset
+    if (isPre && this.charAt(-1) === '\n') {
+      --this.i
+      this.slice(1)
+    }
+    this.slice(shift)
+    this.addEntity(entity, symbol)
+  }
+
+  private checkUnclosedTags(error: string) {
+    if (Object.keys(this.openEntities).length > 0) {
+      this.error(error)
     }
   }
 
@@ -67,7 +98,10 @@ export class MarkdownParser extends BaseParser {
   }
 
   private addToOpenEntities = (symbol: MarkdownSymbol, type?: ApiMessageEntityTypes) => {
-    this.openEntities[symbol] = { type: type ? type : this.charToEntityType[symbol], offset: this.i, length: -1 }
+    const entity = { type: type ? type : this.charToEntityType[symbol], offset: this.i, length: -1 }
+    this.openEntities[symbol] = entity
+
+    return entity
   }
 
   private underline = () => {
@@ -106,8 +140,9 @@ export class MarkdownParser extends BaseParser {
   private endUrl = () => {
     const entity = this.openEntities['[']
     if (entity && this.charAt(1) === '(') {
-      const { e, i } = new UrlParser(this.text, entity, this.i).getEntity()
-      this.slice(i)
+      this.slice(2)
+      const { e, offset } = new UrlParser(this.text, entity, this.i).getEntity()
+      this.slice(offset)
       this.addEntity(e, '[')
     } else {
       this.error('Missing an open url parenthesis or wrong char after it')

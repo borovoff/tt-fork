@@ -38,6 +38,17 @@ pre-formatted fixed-width code block written in the Python programming language
 >Expandable block quotation continued
 >The last line of the expandable block quotation with the expandability mark||`
 
+
+export const parseCode = `
+\`inline fixed-width code\`
+\`\`\`
+pre-formatted fixed-width code block
+\`\`\`
+\`\`\`python
+in Python programming language
+\`\`\`
+`
+
 export const tests = [
   verySimple,
   emoji,
