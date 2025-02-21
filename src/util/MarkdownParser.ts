@@ -32,8 +32,8 @@ export class MarkdownParser extends BaseParser {
     }
 
     const es = getSlicedEntities(this.entities as ApiMessageEntity[])
-    if (es.length) {
-      return { entities: this.entities as ApiMessageEntity[], text: this.text }
+    if (es.length || this.text.length) {
+      return { entities: es.length === 0 ? undefined : es, text: this.text }
     }
 
     return { text: this.initialText }

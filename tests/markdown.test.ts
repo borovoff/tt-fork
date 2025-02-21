@@ -118,7 +118,7 @@ describe('MarkdownV2 Parser', () => {
     const input = '\\*escaped asterisk\\*';
     const expected = {
       text: '*escaped asterisk*',
-      entities: [],
+      entities: undefined,
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
   });
@@ -192,7 +192,7 @@ describe('MarkdownV2 Parser', () => {
     const input = '';
     const expected = {
       text: '',
-      entities: [],
+      entities: undefined,
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
   });
@@ -201,7 +201,7 @@ describe('MarkdownV2 Parser', () => {
     const input = '*unclosed bold';
     const expected = {
       text: '*unclosed bold',
-      entities: [],
+      entities: undefined,
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
   });
@@ -210,7 +210,7 @@ describe('MarkdownV2 Parser', () => {
     const input = '*text with special characters: [ ] ( ) ~ ` > # + - = | { } . !*';
     const expected = {
       text: '*text with special characters: [ ] ( ) ~ ` > # + - = | { } . !*',
-      entities: [],
+      entities: undefined,
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
   });
