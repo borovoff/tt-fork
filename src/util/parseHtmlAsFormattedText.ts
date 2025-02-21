@@ -70,6 +70,11 @@ export default function parseHtmlAsFormattedText(
     }
   }
 
+  // It will work only if it can parse the whole markdown without problem (wrong syntax or open tags)
+  // I think it is good approach because it is for users who knows what to do
+  // For others better to do not have bold if they want to send kiss *
+  // Also in dev env I faced with errors when try to send example message from here https://core.telegram.org/bots/api
+  // Because of user IDies, I don't know how to validate it, please use with caution
   const ft = new MarkdownParser(text).getFormattedText()
   return {
     text: ft.text,

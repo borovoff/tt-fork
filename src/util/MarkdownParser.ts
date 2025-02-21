@@ -1,4 +1,5 @@
 import {ApiMessageEntity, ApiMessageEntityBlockquote, ApiMessageEntityPre, ApiMessageEntityTypes} from "../api/types"
+import {getSlicedEntities} from "../components/middle/helpers/getSlicedEntities"
 import {BaseParser, CutEntity, MarkdownSymbol, OpenEntities} from "./BaseParser"
 import {CodeParser} from "./CodeParser"
 import {UrlParser} from "./UrlParser"
@@ -26,7 +27,12 @@ export class MarkdownParser extends BaseParser {
       return { text: this.initialText }
     }
 
-    return { entities: this.entities as ApiMessageEntity[], text: this.text }
+    const es = getSlicedEntities(this.entities as ApiMessageEntity[])
+    if (es.length) {
+      return { entities: this.entities as ApiMessageEntity[], text: this.text }
+    }
+
+    return { text: this.initialText }
   }
 
   private simple = (symbol: MarkdownSymbol) => {

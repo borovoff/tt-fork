@@ -1,12 +1,10 @@
 import {ApiMessageEntityTypes} from "../src/api/types";
-import {getSlicedEntities} from "../src/components/middle/helpers/getSlicedEntities";
 import {MarkdownParser} from "../src/util/MarkdownParser";
 
 const parseMarkdownV2 = (t: string) => {
   const { entities, text } = new MarkdownParser(t).getFormattedText()
-  const se = getSlicedEntities(entities) 
-  console.log(se)
-  return { text, entities: se }
+  console.log(entities)
+  return { text, entities }
 }
 
 describe('MarkdownV2 Parser', () => {
