@@ -2,6 +2,7 @@ import type { ApiFormattedText, ApiMessageEntity } from '../api/types';
 import { ApiMessageEntityTypes } from '../api/types';
 
 import { RE_LINK_TEMPLATE } from '../config';
+import {MarkdownParser} from './MarkdownParser';
 import { IS_EMOJI_SUPPORTED } from './windowEnvironment';
 
 export const ENTITY_CLASS_BY_NODE_NAME: Record<string, ApiMessageEntityTypes> = {
@@ -62,10 +63,18 @@ export default function parseHtmlAsFormattedText(
     addEntity(node);
   });
 
+  if (entities.length) {
+    return {
+      text,
+      entities,
+    }
+  }
+
+  const ft = new MarkdownParser(text).getFormattedText()
   return {
-    text,
-    entities: entities.length ? entities : undefined,
-  };
+    text: ft.text,
+    entities: ft.entities
+  }
 }
 
 export function fixImageContent(fragment: HTMLDivElement) {
@@ -128,10 +137,13 @@ function parseMarkdown(html: string) {
     /(?!<(code|pre)[^<]*|<\/)[~]{2}([^~\n]+)[~]{2}(?![^<]*<\/(code|pre)>)/g,
     '<s>$2</s>',
   );
-  parsedHtml = parsedHtml.replace(
-    /(?!<(code|pre)[^<]*|<\/)[|]{2}([^|\n]+)[|]{2}(?![^<]*<\/(code|pre)>)/g,
-    `<span data-entity-type="${ApiMessageEntityTypes.Spoiler}">$2</span>`,
-  );
+  // I don't understand the reason why all this parsing is here
+  // Looks like working entity part only below
+  // skip it because it can be done by MarkdownParser
+  //parsedHtml = parsedHtml.replace(
+  //  /(?!<(code|pre)[^<]*|<\/)[|]{2}([^|\n]+)[|]{2}(?![^<]*<\/(code|pre)>)/g,
+  //  `<span data-entity-type="${ApiMessageEntityTypes.Spoiler}">$2</span>`,
+  //);
 
   return parsedHtml;
 }

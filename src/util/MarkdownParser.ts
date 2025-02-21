@@ -13,16 +13,11 @@ export class MarkdownParser extends BaseParser {
   constructor(text: string) {
     super(text)
     this.initialText = text
-    console.log(text)
   }
 
   getFormattedText() {
     try {
       this.parse()
-
-      console.log(this.entities)
-      console.log(this.text)
-
       this.checkUnclosedTags('Detected unclosed tag after parsing')
     } catch (e) {
       // TODO: here error can be highlighted in input

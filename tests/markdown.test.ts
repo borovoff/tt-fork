@@ -394,45 +394,25 @@ Hidden by default part of the expandable block quotation started
 Expandable block quotation continued
 The last line of the expandable block quotation with the expandability mark`,
       entities: [
-        { type: 'MessageEntityBold', offset: 0, length: 5 },
-        { type: 'MessageEntityBold', offset: 9, length: 8 },
-        { type: 'MessageEntityItalic', offset: 10, length: 7 },
-        { type: 'MessageEntityItalic', offset: 17, length: 4 },
-        { type: 'MessageEntityUnderline', offset: 22, length: 9 },
-        { type: 'MessageEntityStrike', offset: 32, length: 13 },
-        { type: 'MessageEntitySpoiler', offset: 46, length: 7 },
-        { type: 'MessageEntityBold', offset: 54, length: 103 },
-        { type: 'MessageEntityItalic', offset: 59, length: 93 },
-        { type: 'MessageEntityStrike', offset: 71, length: 59 },
-        { type: 'MessageEntitySpoiler', offset: 97, length: 33 },
-        { type: 'MessageEntityUnderline', offset: 131, length: 21 },
-        {
-          type: 'MessageEntityTextUrl',
-          offset: 158,
-          length: 10,
-          url: 'http://www.example.com/'
-        },
-        {
-          type: 'MessageEntityCustomEmoji',
-          offset: 169,
-          length: 2,
-          documentId: '5368324170671202286'
-        },
-        { type: 'MessageEntityCode', offset: 172, length: 23 },
-        { type: 'MessageEntityPre', offset: 196, length: 36, language: '' },
-        {
-          type: 'MessageEntityPre',
-          offset: 233,
-          length: 79,
-          language: 'python'
-        },
-        { type: 'MessageEntityBlockquote', offset: 313, length: 138 },
-        {
-          type: 'MessageEntityBlockquote',
-          offset: 452,
-          length: 368,
-          canCollapse: true
-        }
+        { type: ApiMessageEntityTypes.Bold, offset: 0, length: 5 },
+        { type: ApiMessageEntityTypes.Bold, offset: 9, length: 8 },
+        { type: ApiMessageEntityTypes.Italic, offset: 10, length: 7 },
+        { type: ApiMessageEntityTypes.Italic, offset: 17, length: 4 },
+        { type: ApiMessageEntityTypes.Underline, offset: 22, length: 9 },
+        { type: ApiMessageEntityTypes.Strike, offset: 32, length: 13 },
+        { type: ApiMessageEntityTypes.Spoiler, offset: 46, length: 7 },
+        { type: ApiMessageEntityTypes.Bold, offset: 54, length: 103 },
+        { type: ApiMessageEntityTypes.Italic, offset: 59, length: 93 },
+        { type: ApiMessageEntityTypes.Strike, offset: 71, length: 59 },
+        { type: ApiMessageEntityTypes.Spoiler, offset: 97, length: 33 },
+        { type: ApiMessageEntityTypes.Underline, offset: 131, length: 21 },
+        { type: ApiMessageEntityTypes.TextUrl, offset: 158, length: 10, url: 'http://www.example.com/' },
+        { type: ApiMessageEntityTypes.CustomEmoji, offset: 169, length: 2, documentId: '5368324170671202286' },
+        { type: ApiMessageEntityTypes.Code, offset: 172, length: 23 },
+        { type: ApiMessageEntityTypes.Pre, offset: 196, length: 36, language: '' },
+        { type: ApiMessageEntityTypes.Pre, offset: 233, length: 79, language: 'python' },
+        { type: ApiMessageEntityTypes.Blockquote, offset: 313, length: 138 },
+        { type: ApiMessageEntityTypes.Blockquote, offset: 452, length: 368, canCollapse: true }
       ]
     }
 
