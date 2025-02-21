@@ -41,12 +41,15 @@ export class TextHistory {
       const { next, previous, offset } = previousDiff.text
       if (previous === '' && next !== '' && offset + next.length === textDiff.offset &&
           this.isNotBreak(next, n) && this.isNotBreak(next, n, '\n')) {
-        appendToPrevious = true
+        if (EntitiesDifference.hashify(entityDiff.previous) === EntitiesDifference.hashify(previousDiff.entities.next)) {
+          appendToPrevious = true
+        }
       }
     }
 
     if (appendToPrevious) {
       previousDiff.text.next += n
+      previousDiff.entities.next = entityDiff.next
     } else {
       this.history.push({
         text: textDiff,

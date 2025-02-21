@@ -5,7 +5,7 @@ export class EntitiesDifference {
   previous!: ApiMessageEntity[]
   next!: ApiMessageEntity[]
 
-  private static hashify(entity: ApiMessageEntity) {
+  static hashify(entity: ApiMessageEntity | ApiMessageEntity[]) {
     return JSON.stringify(entity)
   }
 
