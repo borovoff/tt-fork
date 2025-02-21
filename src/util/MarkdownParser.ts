@@ -19,6 +19,10 @@ export class MarkdownParser extends BaseParser {
   getFormattedText() {
     try {
       this.parse()
+      const quote = this.openEntities['>']
+      if (quote) {
+        this.addEntity(quote, '>')
+      }
       this.checkUnclosedTags('Detected unclosed tag after parsing')
     } catch (e) {
       // TODO: here error can be highlighted in input
