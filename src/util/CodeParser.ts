@@ -35,7 +35,7 @@ export class CodeParser extends SpecialParser {
 
     this.error('Wrong code block syntax')
   }
-  
+
   protected charToAction = {
     '\\': this.escape,
     '`': this.code,

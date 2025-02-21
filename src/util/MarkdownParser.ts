@@ -121,7 +121,7 @@ export class MarkdownParser extends BaseParser {
   private spoiler = () => {
     if (this.charAt(1) === '|') {
       const quote = this.openEntities['>'] as ApiMessageEntityBlockquote
-      if (!this.openEntities.hasOwnProperty('||') && quote && 
+      if (!this.openEntities.hasOwnProperty('||') && quote &&
           (this.charAt(2) === '\n' || this.i + 2 === this.text.length)) {
         quote.canCollapse = true
         this.addEntity(quote, '>')

@@ -458,8 +458,8 @@ const MessageInput: FC<OwnProps & StateProps> = ({
     }
 
     if (!isComposing && e.key === 'Enter' && !e.shiftKey) {
-      if (!isMobileDevice && 
-          ((messageSendKeyCombo === 'enter' && !e.shiftKey) || 
+      if (!isMobileDevice &&
+          ((messageSendKeyCombo === 'enter' && !e.shiftKey) ||
           (messageSendKeyCombo === 'ctrl-enter' && (e.ctrlKey || e.metaKey)))) {
         e.preventDefault();
 

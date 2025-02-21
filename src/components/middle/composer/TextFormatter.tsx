@@ -247,7 +247,7 @@ const TextFormatter: FC<OwnProps> = ({
       // Prevents focus loss when clicking on the toolbar
       onMouseDown={stopEvent}>
       <div className="TextFormatter-buttons">
-        {formats.map(format => 
+        {formats.map(format =>
           <Button
             key={format.type}
             color="translucent"
@@ -258,18 +258,19 @@ const TextFormatter: FC<OwnProps> = ({
           </Button>
         )}
         <div className="TextFormatter-divider" />
-        <Button 
-          color="translucent" 
-          ariaLabel={lang('TextFormat.AddLinkTitle')} 
+        <Button
+          color="translucent"
+          ariaLabel={lang('TextFormat.AddLinkTitle')}
           className={getFormatButtonClassName(ApiMessageEntityTypes.TextUrl)}
-          onClick={openLinkControl}>
+          onClick={openLinkControl}
+        >
           <Icon name="link" />
         </Button>
       </div>
 
       <div className="TextFormatter-link-control">
         <div className="TextFormatter-buttons">
-          <Button 
+          <Button
             color="translucent"
             ariaLabel={lang('Cancel')}
             onClick={closeLinkControl}>
