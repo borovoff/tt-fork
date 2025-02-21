@@ -32,7 +32,6 @@ export class MarkdownParser extends BaseParser {
       this.checkUnclosedTags('Detected unclosed tag after parsing');
     } catch (e) {
       // TODO: here error can be highlighted in input
-      console.error(e);
 
       return { text: this.initialText };
     }

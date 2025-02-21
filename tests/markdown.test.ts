@@ -1,11 +1,11 @@
-import {ApiMessageEntityTypes} from "../src/api/types";
-import {MarkdownParser} from "../src/util/MarkdownParser";
+import { ApiMessageEntityTypes } from '../src/api/types';
+
+import { MarkdownParser } from '../src/util/MarkdownParser';
 
 const parseMarkdownV2 = (t: string) => {
-  const { entities, text } = new MarkdownParser(t).getFormattedText()
-  console.log(entities)
-  return { text, entities }
-}
+  const { entities, text } = new MarkdownParser(t).getFormattedText();
+  return { text, entities };
+};
 
 describe('MarkdownV2 Parser', () => {
   test('Bold Text', () => {
@@ -258,28 +258,34 @@ describe('MarkdownV2 Parser', () => {
 
   test('Telegram example urls', () => {
     const input = `[inline mention of a user](tg://user?id=123456789)
-![👍](tg://emoji?id=5368324170671202286) [inline URL](http://www.example.com/)`
+![👍](tg://emoji?id=5368324170671202286) [inline URL](http://www.example.com/)`;
 
     const expected = {
       text: 'inline mention of a user\n👍 inline URL',
       entities: [
-        {type: "MessageEntityMentionName", offset: 0, length: 24, userId: "123456789"},
-        {type: "MessageEntityCustomEmoji", offset: 25, length: 2, documentId: "5368324170671202286"},
-        {type: "MessageEntityTextUrl", offset: 28, length: 10, url: "http://www.example.com/"}
+        {
+          type: 'MessageEntityMentionName', offset: 0, length: 24, userId: '123456789',
+        },
+        {
+          type: 'MessageEntityCustomEmoji', offset: 25, length: 2, documentId: '5368324170671202286',
+        },
+        {
+          type: 'MessageEntityTextUrl', offset: 28, length: 10, url: 'http://www.example.com/',
+        },
       ],
-    }
-    expect(parseMarkdownV2(input)).toEqual(expected)
-  })
+    };
+    expect(parseMarkdownV2(input)).toEqual(expected);
+  });
 
   test('Telegram example simple', () => {
-    const input = `*bold \\*text*`
+    const input = '*bold \\*text*';
 
     const expected = {
       text: 'bold *text',
-      entities: [{type: "MessageEntityBold", offset: 0, length: 10}],
-    }
-    expect(parseMarkdownV2(input)).toEqual(expected)
-  })
+      entities: [{ type: 'MessageEntityBold', offset: 0, length: 10 }],
+    };
+    expect(parseMarkdownV2(input)).toEqual(expected);
+  });
 
   test('Telegram example nested without blocks', () => {
     const input = `*bold \\*text*
@@ -287,7 +293,7 @@ _italic \\*text_
 __underline__
 ~strikethrough~
 ||spoiler||
-*bold _italic bold ~italic bold strikethrough ||italic bold strikethrough spoiler||~ __underline italic bold___ bold*`
+*bold _italic bold ~italic bold strikethrough ||italic bold strikethrough spoiler||~ __underline italic bold___ bold*`;
 
     const expected = {
       text: `bold *text
@@ -306,11 +312,11 @@ bold italic bold italic bold strikethrough italic bold strikethrough spoiler und
         { type: 'MessageEntityItalic', offset: 61, length: 93 },
         { type: 'MessageEntityStrike', offset: 73, length: 59 },
         { type: 'MessageEntitySpoiler', offset: 99, length: 33 },
-        { type: 'MessageEntityUnderline', offset: 133, length: 21 }
+        { type: 'MessageEntityUnderline', offset: 133, length: 21 },
       ],
-    }
-    expect(parseMarkdownV2(input)).toEqual(expected)
-  })
+    };
+    expect(parseMarkdownV2(input)).toEqual(expected);
+  });
 
   test('Telegram example code', () => {
     const input = `\`inline fixed-width code\`
@@ -319,7 +325,7 @@ pre-formatted fixed-width code block
 \`\`\`
 \`\`\`python
 in Python programming language
-\`\`\``
+\`\`\``;
 
     const expected = {
       text: `inline fixed-width code
@@ -327,21 +333,23 @@ pre-formatted fixed-width code block
 in Python programming language`,
       entities: [
         { type: 'MessageEntityCode', offset: 0, length: 23 },
-        { type: 'MessageEntityPre', offset: 24, length: 36, language: '' },
+        {
+          type: 'MessageEntityPre', offset: 24, length: 36, language: '',
+        },
         {
           type: 'MessageEntityPre',
           offset: 61,
           length: 30,
-          language: 'python'
-        }
+          language: 'python',
+        },
       ],
-    }
-    expect(parseMarkdownV2(input)).toEqual(expected)
-  })
+    };
+    expect(parseMarkdownV2(input)).toEqual(expected);
+  });
 
   test('Telegram example full', () => {
-    const input = `*bold \*text*
-_italic \*text_
+    const input = `*bold \\*text*
+_italic \\*text_
 __underline__
 ~strikethrough~
 ||spoiler||
@@ -365,12 +373,11 @@ pre-formatted fixed-width code block written in the Python programming language
 >Expandable block quotation continued
 >Hidden by default part of the expandable block quotation started
 >Expandable block quotation continued
->The last line of the expandable block quotation with the expandability mark||`
-    console.log(parseMarkdownV2(input))
+>The last line of the expandable block quotation with the expandability mark||`;
 
     const expected = {
-      text: `bold text
-italic text
+      text: `bold *text
+italic *text
 underline
 strikethrough
 spoiler
@@ -392,29 +399,36 @@ Hidden by default part of the expandable block quotation started
 Expandable block quotation continued
 The last line of the expandable block quotation with the expandability mark`,
       entities: [
-        { type: ApiMessageEntityTypes.Bold, offset: 0, length: 5 },
-        { type: ApiMessageEntityTypes.Bold, offset: 9, length: 8 },
-        { type: ApiMessageEntityTypes.Italic, offset: 10, length: 7 },
-        { type: ApiMessageEntityTypes.Italic, offset: 17, length: 4 },
-        { type: ApiMessageEntityTypes.Underline, offset: 22, length: 9 },
-        { type: ApiMessageEntityTypes.Strike, offset: 32, length: 13 },
-        { type: ApiMessageEntityTypes.Spoiler, offset: 46, length: 7 },
-        { type: ApiMessageEntityTypes.Bold, offset: 54, length: 103 },
-        { type: ApiMessageEntityTypes.Italic, offset: 59, length: 93 },
-        { type: ApiMessageEntityTypes.Strike, offset: 71, length: 59 },
-        { type: ApiMessageEntityTypes.Spoiler, offset: 97, length: 33 },
-        { type: ApiMessageEntityTypes.Underline, offset: 131, length: 21 },
-        { type: ApiMessageEntityTypes.TextUrl, offset: 158, length: 10, url: 'http://www.example.com/' },
-        { type: ApiMessageEntityTypes.CustomEmoji, offset: 169, length: 2, documentId: '5368324170671202286' },
-        { type: ApiMessageEntityTypes.Code, offset: 172, length: 23 },
-        { type: ApiMessageEntityTypes.Pre, offset: 196, length: 36, language: '' },
-        { type: ApiMessageEntityTypes.Pre, offset: 233, length: 79, language: 'python' },
-        { type: ApiMessageEntityTypes.Blockquote, offset: 313, length: 138 },
-        { type: ApiMessageEntityTypes.Blockquote, offset: 452, length: 368, canCollapse: true }
-      ]
-    }
+        { type: 'MessageEntityBold', offset: 0, length: 10 },
+        { type: 'MessageEntityItalic', offset: 11, length: 12 },
+        { type: 'MessageEntityUnderline', offset: 24, length: 9 },
+        { type: 'MessageEntityStrike', offset: 34, length: 13 },
+        { type: 'MessageEntitySpoiler', offset: 48, length: 7 },
+        { type: 'MessageEntityBold', offset: 56, length: 103 },
+        { type: 'MessageEntityItalic', offset: 61, length: 93 },
+        { type: 'MessageEntityStrike', offset: 73, length: 59 },
+        { type: 'MessageEntitySpoiler', offset: 99, length: 33 },
+        { type: 'MessageEntityUnderline', offset: 133, length: 21 },
+        {
+          type: 'MessageEntityTextUrl', offset: 160, length: 10, url: 'http://www.example.com/',
+        },
+        {
+          type: 'MessageEntityCustomEmoji', offset: 171, length: 2, documentId: '5368324170671202286',
+        },
+        { type: 'MessageEntityCode', offset: 174, length: 23 },
+        {
+          type: 'MessageEntityPre', offset: 198, length: 36, language: '',
+        },
+        {
+          type: 'MessageEntityPre', offset: 235, length: 79, language: 'python',
+        },
+        { type: 'MessageEntityBlockquote', offset: 315, length: 138 },
+        {
+          type: 'MessageEntityBlockquote', offset: 454, length: 368, canCollapse: true,
+        },
+      ],
+    };
 
-    expect(parseMarkdownV2(input)).toEqual(expected)
-  })
-
-})
+    expect(parseMarkdownV2(input)).toEqual(expected);
+  });
+});

@@ -46,7 +46,7 @@ export class FormattedText implements ApiFormattedText {
 
   getActiveTypes(entity: Interval) {
     return this.entities?.filter((e) => {
-      const result = this.isOverlapping(entity, e);
+      const result = FormattedText.isOverlapping(entity, e);
       if (!result) {
         return;
       }
@@ -67,7 +67,7 @@ export class FormattedText implements ApiFormattedText {
     return FormattedText.getSliced(this.entities);
   }
 
-  private isOverlapping(entity1: Interval, entity2: ApiMessageEntity) {
+  private static isOverlapping(entity1: Interval, entity2: ApiMessageEntity) {
     const offset1 = entity1.offset;
     const end1 = offset1 + entity1.length - 1;
 
@@ -83,8 +83,8 @@ export class FormattedText implements ApiFormattedText {
     };
   }
 
-  private getOverlappingInterval(entity1: Interval, entity2: ApiMessageEntity, add: boolean) {
-    const result = this.isOverlapping(entity1, entity2);
+  private static getOverlappingInterval(entity1: Interval, entity2: ApiMessageEntity, add: boolean) {
+    const result = FormattedText.isOverlapping(entity1, entity2);
     if (!result) {
       return;
     }
@@ -164,7 +164,7 @@ export class FormattedText implements ApiFormattedText {
         continue;
       }
 
-      const result = this.getOverlappingInterval(entity, e, add);
+      const result = FormattedText.getOverlappingInterval(entity, e, add);
       if (!result) {
         continue;
       }

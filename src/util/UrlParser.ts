@@ -1,15 +1,10 @@
 import type { ApiMessageEntityMentionName, ApiMessageEntityTextUrl } from '../api/types';
-import type { CutEntity } from './BaseParser';
 import { ApiMessageEntityTypes } from '../api/types';
 
 import { SpecialParser } from './SpecialParser';
 
 export class UrlParser extends SpecialParser {
   protected maxLength = 100;
-
-  constructor(text: string, entity: CutEntity, i: number) {
-    super(text, entity, i);
-  }
 
   getEntity() {
     this.parse();
@@ -26,6 +21,7 @@ export class UrlParser extends SpecialParser {
 
   private checkUrl(url: string) {
     try {
+      // eslint-disable-next-line no-new
       new URL(url);
     } catch {
       this.error('Url is not valid');

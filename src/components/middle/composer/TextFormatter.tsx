@@ -39,7 +39,8 @@ export type OwnProps = {
   onClose: () => void;
 };
 
-type FormatterApiMessageEntityTypes = ApiMessageEntityTypesDefault | ApiMessageEntityTypes.TextUrl | ApiMessageEntityTypes.Blockquote;
+type FormatterApiMessageEntityTypes = ApiMessageEntityTypesDefault | ApiMessageEntityTypes.TextUrl
+| ApiMessageEntityTypes.Blockquote;
 type ISelectedTextFormats = { [key in FormatterApiMessageEntityTypes]?: boolean };
 type Formats = { type: FormatterApiMessageEntityTypes; text: string }[];
 
@@ -68,7 +69,6 @@ const TextFormatter: FC<OwnProps> = ({
   const { shouldRender, transitionClassNames } = useShowTransitionDeprecated(isOpen);
   const [isLinkControlOpen, openLinkControl, closeLinkControl] = useFlag();
   const [linkUrl, setLinkUrl] = useState('');
-  const [isEditingLink, setIsEditingLink] = useState(false);
   const [inputClassName, setInputClassName] = useState<string | undefined>();
   const [selectedTextFormats, setSelectedTextFormats] = useState<ISelectedTextFormats>({});
 
@@ -87,7 +87,6 @@ const TextFormatter: FC<OwnProps> = ({
       linkUrlInputRef.current!.focus();
     } else {
       setLinkUrl('');
-      setIsEditingLink(false);
     }
   }, [isLinkControlOpen]);
 
@@ -116,7 +115,7 @@ const TextFormatter: FC<OwnProps> = ({
       }, {});
       setSelectedTextFormats(fs);
     }
-  }, [isOpen, selectedRange, openLinkControl]);
+  }, [isOpen, selectedRange, openLinkControl, inputRef]);
 
   function updateInputStyles() {
     const input = linkUrlInputRef.current;

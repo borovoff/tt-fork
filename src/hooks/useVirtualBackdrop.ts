@@ -44,5 +44,5 @@ export default function useVirtualBackdrop(
     return () => {
       document.removeEventListener('mousedown', handleEvent);
     };
-  }, [excludedClosestSelector, ignoreRightClick, isOpen, containerRef, onClose]);
+  }, [excludedClosestSelector, ignoreRightClick, isOpen, containerRef, onClose, stopPropagation]);
 }

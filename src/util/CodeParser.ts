@@ -1,14 +1,9 @@
-import type { CutEntity } from './BaseParser';
 import { ApiMessageEntityTypes } from '../api/types';
 
 import { SpecialParser } from './SpecialParser';
 
 export class CodeParser extends SpecialParser {
   protected maxLength = 1000;
-
-  constructor(text: string, entity: CutEntity, i: number) {
-    super(text, entity, i);
-  }
 
   getOffset() {
     this.parse();
@@ -28,7 +23,8 @@ export class CodeParser extends SpecialParser {
   };
 
   private code = () => {
-    if ((this.entity.type === ApiMessageEntityTypes.Pre && this.isPre()) || this.entity.type === ApiMessageEntityTypes.Code) {
+    if ((this.entity.type === ApiMessageEntityTypes.Pre && this.isPre())
+        || this.entity.type === ApiMessageEntityTypes.Code) {
       this.entity.length = this.i - this.entity.offset;
       return true;
     }

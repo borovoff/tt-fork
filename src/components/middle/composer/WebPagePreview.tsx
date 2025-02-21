@@ -101,10 +101,10 @@ const WebPagePreview: FC<OwnProps & StateProps> = ({
 
   useEffect(() => {
     const link = getLink();
-    const formattedText = formattedTextWithLinkRef.current;
+    const ft = formattedTextWithLinkRef.current;
 
     if (link) {
-      loadWebPagePreview({ text: formattedText! });
+      loadWebPagePreview({ text: ft! });
     } else {
       clearWebPagePreview();
       toggleMessageWebPage({ chatId, threadId });

@@ -19,7 +19,6 @@ import captureKeyboardListeners from '../../../util/captureKeyboardListeners';
 import { getIsDirectTextInputDisabled } from '../../../util/directInputManager';
 import parseEmojiOnlyString from '../../../util/emoji/parseEmojiOnlyString';
 import focusEditableElement from '../../../util/focusEditableElement';
-import { MarkdownParser } from '../../../util/MarkdownParser';
 import { debounce } from '../../../util/schedulers';
 import {
   IS_ANDROID, IS_EMOJI_SUPPORTED, IS_IOS, IS_SAFARI, IS_TOUCH_ENV,
@@ -39,7 +38,7 @@ import useInputCustomEmojis from './hooks/useInputCustomEmojis';
 import Icon from '../../common/icons/Icon';
 import Button from '../../ui/Button';
 import TextTimer from '../../ui/TextTimer';
-import { FormattedText, formattedText } from '../helpers/FormattedText';
+import { formattedText } from '../helpers/FormattedText';
 import { textHistory } from '../helpers/TextHistory';
 import TextFormatter from './TextFormatter.async';
 
@@ -246,6 +245,12 @@ const MessageInput: FC<OwnProps & StateProps> = ({
     updateInputHeight(false);
   }, [isAttachmentModalInput, updateInputHeight]);
 
+  const addRange = (range: Range) => {
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  };
+
   const htmlRef = useRef(getHtml());
   useLayoutEffect(() => {
     const html = isActive ? getHtml() : '';
@@ -280,7 +285,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
 
       updateInputHeight(!html);
     }
-  }, [getHtml, isActive, updateInputHeight]);
+  }, [getHtml, isActive, updateInputHeight, selectedRange]);
 
   const chatIdRef = useRef(chatId);
   chatIdRef.current = chatId;
@@ -397,12 +402,6 @@ const MessageInput: FC<OwnProps & StateProps> = ({
     document.addEventListener('keydown', handleCloseContextMenu);
   }
 
-  const addRange = (range: Range) => {
-    const selection = window.getSelection();
-    selection?.removeAllRanges();
-    selection?.addRange(range);
-  };
-
   const tryToRunOut = (e: React.KeyboardEvent<HTMLDivElement>) => {
     e.target.addEventListener('keyup', processSelectionWithTimeout, { once: true });
 
@@ -438,7 +437,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
     const range = window.getSelection()!.getRangeAt(0);
     const { offset } = getOffsetByRange(inputRef.current, range);
     const types = formattedText.getTypesByOffset(offset);
-    if (types?.find((e) => e.type === ApiMessageEntityTypes.Blockquote)) {
+    if (types?.find((entity) => entity.type === ApiMessageEntityTypes.Blockquote)) {
       e.preventDefault();
       document.execCommand('insertHTML', false, '\n');
     }

@@ -18,13 +18,13 @@ export class TextHistory {
     this.history = [];
   }
 
-  private isNotBreak(previous: string, next: string, symbol = ' ') {
-    return !(next.startsWith(symbol) || previous.endsWith(symbol) && previous !== symbol);
+  private static isNotBreak(previous: string, next: string, symbol = ' ') {
+    return !(next.startsWith(symbol) || (previous.endsWith(symbol) && previous !== symbol));
   }
 
-  add(next: ApiFormattedText, previous?: ApiFormattedText) {
-    const textDiff = TextDifference.diff(previous?.text ?? '', next.text);
-    const entityDiff = EntitiesDifference.diff(previous?.entities ?? [], next.entities);
+  add(nextFT: ApiFormattedText, previousFT?: ApiFormattedText) {
+    const textDiff = TextDifference.diff(previousFT?.text ?? '', nextFT.text);
+    const entityDiff = EntitiesDifference.diff(previousFT?.entities ?? [], nextFT.entities);
     const n = textDiff.next;
     const p = textDiff.previous;
 
@@ -42,8 +42,9 @@ export class TextHistory {
     if (n !== '' && p === '' && previousDiff) {
       const { next, previous, offset } = previousDiff.text;
       if (previous === '' && next !== '' && offset + next.length === textDiff.offset
-          && this.isNotBreak(next, n) && this.isNotBreak(next, n, '\n')) {
-        if (EntitiesDifference.hashify(entityDiff.previous) === EntitiesDifference.hashify(previousDiff.entities.next)) {
+          && TextHistory.isNotBreak(next, n) && TextHistory.isNotBreak(next, n, '\n')) {
+        if (EntitiesDifference.hashify(entityDiff.previous)
+            === EntitiesDifference.hashify(previousDiff.entities.next)) {
           appendToPrevious = true;
         }
       }
@@ -70,7 +71,7 @@ export class TextHistory {
     return {
       text: TextDifference.next(h.text, text),
       entities: EntitiesDifference.next(h.entities, entities),
-      ...this.getOffsetAndLength(h, h.text.offset + h.text.next.length),
+      ...TextHistory.getOffsetAndLength(h, h.text.offset + h.text.next.length),
     };
   }
 
@@ -83,11 +84,11 @@ export class TextHistory {
     return {
       text: TextDifference.previous(h.text, text),
       entities: EntitiesDifference.previous(h.entities, entities),
-      ...this.getOffsetAndLength(h, h.text.offset + h.text.previous.length),
+      ...TextHistory.getOffsetAndLength(h, h.text.offset + h.text.previous.length),
     };
   }
 
-  private getOffsetAndLength({ text, entities }: History, offset: number) {
+  private static getOffsetAndLength({ text, entities }: History, offset: number) {
     let length = 0;
     if (text.next === '' && text.previous === '') {
       const entity = entities.next?.[0] ?? entities.previous?.[0];
