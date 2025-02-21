@@ -92,6 +92,8 @@ export function fixImageContent(fragment: HTMLDivElement) {
   });
 }
 
+// I commented several lines that inerfere with MarkdownV2
+// TODO: remove other unnecessary lines
 function parseMarkdown(html: string) {
   let parsedHtml = html.slice(0);
 
@@ -134,17 +136,14 @@ function parseMarkdown(html: string) {
     /(?!<(code|pre)[^<]*|<\/)[*]{2}([^*\n]+)[*]{2}(?![^<]*<\/(code|pre)>)/g,
     '<b>$2</b>',
   );
-  parsedHtml = parsedHtml.replace(
-    /(?!<(code|pre)[^<]*|<\/)[_]{2}([^_\n]+)[_]{2}(?![^<]*<\/(code|pre)>)/g,
-    '<i>$2</i>',
-  );
+  //parsedHtml = parsedHtml.replace(
+  //  /(?!<(code|pre)[^<]*|<\/)[_]{2}([^_\n]+)[_]{2}(?![^<]*<\/(code|pre)>)/g,
+  //  '<i>$2</i>',
+  //);
   parsedHtml = parsedHtml.replace(
     /(?!<(code|pre)[^<]*|<\/)[~]{2}([^~\n]+)[~]{2}(?![^<]*<\/(code|pre)>)/g,
     '<s>$2</s>',
   );
-  // I don't understand the reason why all this parsing is here
-  // Looks like working entity part only below
-  // skip it because it can be done by MarkdownParser
   //parsedHtml = parsedHtml.replace(
   //  /(?!<(code|pre)[^<]*|<\/)[|]{2}([^|\n]+)[|]{2}(?![^<]*<\/(code|pre)>)/g,
   //  `<span data-entity-type="${ApiMessageEntityTypes.Spoiler}">$2</span>`,
