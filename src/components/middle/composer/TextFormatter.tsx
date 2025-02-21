@@ -170,10 +170,7 @@ const TextFormatter: FC<OwnProps> = ({
 
     textHistory.add(formattedText, { entities, text })
     formattedText.skipUpdate = true
-    console.log(formattedText.entities)
-    console.log(formattedText.text)
     const html = formattedText.getHtml()
-    console.log(html)
     setHtml(html)
 
     setSelectedTextFormats((selectedFormats) => ({

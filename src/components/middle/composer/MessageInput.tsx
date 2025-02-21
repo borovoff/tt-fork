@@ -423,7 +423,6 @@ const MessageInput: FC<OwnProps & StateProps> = ({
         range.selectNode(textNode)
         range.collapse(false)
         addRange(range)
-        formattedText.recalculate(inputRef.current.innerHTML)
         return true
       }
     }
