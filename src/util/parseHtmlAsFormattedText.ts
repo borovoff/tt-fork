@@ -2,8 +2,9 @@ import type { ApiFormattedText, ApiMessageEntity } from '../api/types';
 import { ApiMessageEntityTypes } from '../api/types';
 
 import { RE_LINK_TEMPLATE } from '../config';
-import {MarkdownParser} from './MarkdownParser';
 import { IS_EMOJI_SUPPORTED } from './windowEnvironment';
+
+import { MarkdownParser } from './MarkdownParser';
 
 export const ENTITY_CLASS_BY_NODE_NAME: Record<string, ApiMessageEntityTypes> = {
   B: ApiMessageEntityTypes.Bold,
@@ -23,14 +24,14 @@ export const ENTITY_CLASS_BY_NODE_NAME: Record<string, ApiMessageEntityTypes> = 
 const MAX_TAG_DEEPNESS = 30;
 
 export default function parseHtmlAsFormattedText(
-  html: string, withMarkdownLinks = false, skipMarkdown = false, trim = true
+  html: string, withMarkdownLinks = false, skipMarkdown = false, trim = true,
 ): ApiFormattedText {
   const fragment = document.createElement('div');
   fragment.innerHTML = skipMarkdown ? html
     : withMarkdownLinks ? parseMarkdown(parseMarkdownLinks(html)) : parseMarkdown(html);
   fixImageContent(fragment);
-  const { innerText } = fragment
-  const t = trim ? innerText.trim() : innerText
+  const { innerText } = fragment;
+  const t = trim ? innerText.trim() : innerText;
   const text = t.replace(/\u200b+/g, '');
   const trimShift = fragment.innerText.indexOf(text[0]);
   let textIndex = -trimShift;
@@ -67,7 +68,7 @@ export default function parseHtmlAsFormattedText(
     return {
       text,
       entities,
-    }
+    };
   }
 
   // It will work only if it can parse the whole markdown without problem (wrong syntax or open tags)
@@ -75,11 +76,11 @@ export default function parseHtmlAsFormattedText(
   // For others better to do not have bold if they want to send kiss *
   // Also in dev env I faced with errors when try to send example message from here https://core.telegram.org/bots/api
   // Because of user IDies, I don't know how to validate it, please use with caution
-  const ft = new MarkdownParser(text).getFormattedText()
+  const ft = new MarkdownParser(text).getFormattedText();
   return {
     text: ft.text,
-    entities: ft.entities
-  }
+    entities: ft.entities,
+  };
 }
 
 export function fixImageContent(fragment: HTMLDivElement) {

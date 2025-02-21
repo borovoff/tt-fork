@@ -1,16 +1,20 @@
+import type { MutableRefObject, RefObject } from 'react';
 import type { FC } from '../../../lib/teact/teact';
 import React, {
   memo, useEffect, useRef, useState,
 } from '../../../lib/teact/teact';
 
+import type { ApiMessageEntityTypesDefault } from '../../../api/types';
 import type { IAnchorPosition } from '../../../types';
-import { ApiMessageEntityTypes, ApiMessageEntityTypesDefault } from '../../../api/types';
+import type { IconName } from '../../../types/icons';
+import { ApiMessageEntityTypes } from '../../../api/types';
 
 import buildClassName from '../../../util/buildClassName';
 import captureEscKeyListener from '../../../util/captureEscKeyListener';
 import { ensureProtocol } from '../../../util/ensureProtocol';
 import getKeyFromEvent from '../../../util/getKeyFromEvent';
 import stopEvent from '../../../util/stopEvent';
+import { getOffsetByRange } from '../helpers/getOffsetByRange';
 
 import useFlag from '../../../hooks/useFlag';
 import useLastCallback from '../../../hooks/useLastCallback';
@@ -20,27 +24,24 @@ import useVirtualBackdrop from '../../../hooks/useVirtualBackdrop';
 
 import Icon from '../../common/icons/Icon';
 import Button from '../../ui/Button';
+import { formattedText } from '../helpers/FormattedText';
+import { textHistory } from '../helpers/TextHistory';
 
 import './TextFormatter.scss';
-import {formattedText} from '../helpers/FormattedText';
-import {IconName} from '../../../types/icons';
-import {MutableRefObject, RefObject} from 'react';
-import {textHistory} from '../helpers/TextHistory';
-import {getOffsetByRange} from '../helpers/getOffsetByRange';
 
 export type OwnProps = {
-  selectionOffsetRef: MutableRefObject<{ offset: number, length: number }>
-  inputRef: RefObject<HTMLDivElement>
-  setHtml: (html: string) => void
+  selectionOffsetRef: MutableRefObject<{ offset: number; length: number }>;
+  inputRef: RefObject<HTMLDivElement>;
+  setHtml: (html: string) => void;
   isOpen: boolean;
   anchorPosition?: IAnchorPosition;
   selectedRange?: Range;
   onClose: () => void;
 };
 
-type FormatterApiMessageEntityTypes = ApiMessageEntityTypesDefault | ApiMessageEntityTypes.TextUrl | ApiMessageEntityTypes.Blockquote
-type ISelectedTextFormats = { [key in FormatterApiMessageEntityTypes]?: boolean }
-type Formats = { type: FormatterApiMessageEntityTypes, text: string }[]
+type FormatterApiMessageEntityTypes = ApiMessageEntityTypesDefault | ApiMessageEntityTypes.TextUrl | ApiMessageEntityTypes.Blockquote;
+type ISelectedTextFormats = { [key in FormatterApiMessageEntityTypes]?: boolean };
+type Formats = { type: FormatterApiMessageEntityTypes; text: string }[];
 
 const TextFormatter: FC<OwnProps> = ({
   selectionOffsetRef,
@@ -58,8 +59,8 @@ const TextFormatter: FC<OwnProps> = ({
     { type: ApiMessageEntityTypes.Strike, text: 'Strikethrough' },
     { type: ApiMessageEntityTypes.Code, text: 'Monospace' },
     { type: ApiMessageEntityTypes.Spoiler, text: 'Spoiler' },
-    { type: ApiMessageEntityTypes.Blockquote, text: 'Quote' }
-  ]
+    { type: ApiMessageEntityTypes.Blockquote, text: 'Quote' },
+  ];
   // eslint-disable-next-line no-null/no-null
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line no-null/no-null
@@ -78,7 +79,7 @@ const TextFormatter: FC<OwnProps> = ({
     onClose,
     true,
     undefined,
-    false
+    false,
   );
 
   useEffect(() => {
@@ -103,17 +104,17 @@ const TextFormatter: FC<OwnProps> = ({
       return;
     }
 
-    const { offset, length } = getOffsetByRange(inputRef.current, selectedRange)
-    const types = formattedText?.getActiveTypes({ offset, length })
+    const { offset, length } = getOffsetByRange(inputRef.current, selectedRange);
+    const types = formattedText?.getActiveTypes({ offset, length });
 
     if (types) {
       const fs = types.reduce((accumulator, current) => {
         if (current.type === ApiMessageEntityTypes.TextUrl) {
-          setLinkUrl(current.url)
+          setLinkUrl(current.url);
         }
-        return { ...accumulator, [current.type]: true }
-      }, {})
-      setSelectedTextFormats(fs)
+        return { ...accumulator, [current.type]: true };
+      }, {});
+      setSelectedTextFormats(fs);
     }
   }, [isOpen, selectedRange, openLinkControl]);
 
@@ -146,37 +147,39 @@ const TextFormatter: FC<OwnProps> = ({
   }
 
   function getFormatButtonClassName(key: keyof ISelectedTextFormats) {
-    return selectedTextFormats[key] ? 'active' : undefined
+    return selectedTextFormats[key] ? 'active' : undefined;
   }
 
   const handleChangeFormat = useLastCallback((type: FormatterApiMessageEntityTypes) => {
     if (!selectedRange) {
-      return
+      return;
     }
 
-    const isActive = selectedTextFormats[type]
+    const isActive = selectedTextFormats[type];
 
-    const { offset, length } = getOffsetByRange(inputRef.current, selectedRange)
-    selectionOffsetRef.current = { offset, length }
+    const { offset, length } = getOffsetByRange(inputRef.current, selectedRange);
+    selectionOffsetRef.current = { offset, length };
 
-    const { entities, text } = formattedText
+    const { entities, text } = formattedText;
 
     if (type === ApiMessageEntityTypes.TextUrl) {
-      const url = linkUrl ? (ensureProtocol(linkUrl) || '').split('%').map(encodeURI).join('%') : linkUrl
-      formattedText.recalculateEntities({ type, offset, length, url }, !isActive)
+      const url = linkUrl ? (ensureProtocol(linkUrl) || '').split('%').map(encodeURI).join('%') : linkUrl;
+      formattedText.recalculateEntities({
+        type, offset, length, url,
+      }, !isActive);
     } else {
-      formattedText.recalculateEntities({ type, offset, length }, !isActive)
+      formattedText.recalculateEntities({ type, offset, length }, !isActive);
     }
 
-    textHistory.add(formattedText, { entities, text })
-    formattedText.skipUpdate = true
-    const html = formattedText.getHtml()
-    setHtml(html)
+    textHistory.add(formattedText, { entities, text });
+    formattedText.skipUpdate = true;
+    const html = formattedText.getHtml();
+    setHtml(html);
 
     setSelectedTextFormats((selectedFormats) => ({
       ...selectedFormats,
       [type]: !isActive,
-    }))
+    }));
   });
 
   const handleKeyDown = useLastCallback((e: KeyboardEvent) => {
@@ -188,19 +191,19 @@ const TextFormatter: FC<OwnProps> = ({
       m: () => handleChangeFormat(ApiMessageEntityTypes.Code),
       s: () => handleChangeFormat(ApiMessageEntityTypes.Strike),
       p: () => handleChangeFormat(ApiMessageEntityTypes.Spoiler),
-      '.': () => handleChangeFormat(ApiMessageEntityTypes.Blockquote)
-    }
+      '.': () => handleChangeFormat(ApiMessageEntityTypes.Blockquote),
+    };
 
-    const handler = HANDLERS_BY_KEY[getKeyFromEvent(e)]
+    const handler = HANDLERS_BY_KEY[getKeyFromEvent(e)];
 
     if (e.altKey || !(e.ctrlKey || e.metaKey) || !handler) {
-      return
+      return;
     }
 
-    e.preventDefault()
-    e.stopPropagation()
-    handler()
-  })
+    e.preventDefault();
+    e.stopPropagation();
+    handler();
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -214,8 +217,8 @@ const TextFormatter: FC<OwnProps> = ({
 
   function handleContainerKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key === 'Enter' && isLinkControlOpen) {
-      handleChangeFormat(ApiMessageEntityTypes.TextUrl)
-      e.preventDefault()
+      handleChangeFormat(ApiMessageEntityTypes.TextUrl);
+      e.preventDefault();
     }
   }
 
@@ -245,18 +248,20 @@ const TextFormatter: FC<OwnProps> = ({
       style={style}
       onKeyDown={handleContainerKeyDown}
       // Prevents focus loss when clicking on the toolbar
-      onMouseDown={stopEvent}>
+      onMouseDown={stopEvent}
+    >
       <div className="TextFormatter-buttons">
-        {formats.map(format =>
+        {formats.map((format) => (
           <Button
             key={format.type}
             color="translucent"
             ariaLabel={`${format.text} text`}
             className={getFormatButtonClassName(format.type)}
-            onClick={() => handleChangeFormat(format.type)}>
+            onClick={() => handleChangeFormat(format.type)}
+          >
             <Icon name={format.text.toLowerCase() as IconName} />
           </Button>
-        )}
+        ))}
         <div className="TextFormatter-divider" />
         <Button
           color="translucent"
@@ -273,7 +278,8 @@ const TextFormatter: FC<OwnProps> = ({
           <Button
             color="translucent"
             ariaLabel={lang('Cancel')}
-            onClick={closeLinkControl}>
+            onClick={closeLinkControl}
+          >
             <Icon name="arrow-left" />
           </Button>
           <div className="TextFormatter-divider" />

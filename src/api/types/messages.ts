@@ -491,7 +491,7 @@ export type ApiMessageEntityTypesDefault = Exclude<
   `${ApiMessageEntityTypes}`,
   `${ApiMessageEntityTypes.Pre}` | `${ApiMessageEntityTypes.TextUrl}` | `${ApiMessageEntityTypes.MentionName}` |
   `${ApiMessageEntityTypes.CustomEmoji}` | `${ApiMessageEntityTypes.Blockquote}`
-  >
+>;
 
 export type ApiMessageEntityDefault = {
   type: ApiMessageEntityTypesDefault;

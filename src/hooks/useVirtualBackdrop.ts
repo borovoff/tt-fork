@@ -11,7 +11,7 @@ export default function useVirtualBackdrop(
   onClose?: () => void | undefined,
   ignoreRightClick?: boolean,
   excludedClosestSelector?: string,
-  stopPropagation = true
+  stopPropagation = true,
 ) {
   useEffect(() => {
     if (!isOpen || !onClose) {

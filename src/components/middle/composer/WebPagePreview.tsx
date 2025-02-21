@@ -28,11 +28,11 @@ import Icon from '../../common/icons/Icon';
 import Button from '../../ui/Button';
 import Menu from '../../ui/Menu';
 import MenuItem from '../../ui/MenuItem';
+import { FormattedText, formattedText } from '../helpers/FormattedText';
+import { textHistory } from '../helpers/TextHistory';
 import WebPage from '../message/WebPage';
 
 import './WebPagePreview.scss';
-import {FormattedText, formattedText} from '../helpers/FormattedText';
-import {textHistory} from '../helpers/TextHistory';
 
 type OwnProps = {
   chatId: string;
@@ -83,10 +83,10 @@ const WebPagePreview: FC<OwnProps & StateProps> = ({
   const detectLinkDebounced = useDebouncedResolver(() => {
     const ft = FormattedText.parse(getHtml());
     if (formattedText.skipUpdate) {
-      formattedText.skipUpdate = false
+      formattedText.skipUpdate = false;
     } else {
-      textHistory.add(ft, formattedText)
-      formattedText.reinit(ft)
+      textHistory.add(ft, formattedText);
+      formattedText.reinit(ft);
     }
     const linkEntity = ft.entities?.find((entity): entity is ApiMessageEntityTextUrl => (
       entity.type === ApiMessageEntityTypes.TextUrl

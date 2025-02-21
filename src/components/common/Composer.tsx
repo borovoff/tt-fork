@@ -165,6 +165,8 @@ import SendAsMenu from '../middle/composer/SendAsMenu.async';
 import StickerTooltip from '../middle/composer/StickerTooltip.async';
 import SymbolMenuButton from '../middle/composer/SymbolMenuButton';
 import WebPagePreview from '../middle/composer/WebPagePreview';
+import { formattedText } from '../middle/helpers/FormattedText';
+import { textHistory } from '../middle/helpers/TextHistory';
 import MessageEffect from '../middle/message/MessageEffect';
 import ReactionSelector from '../middle/message/reactions/ReactionSelector';
 import Button from '../ui/Button';
@@ -175,8 +177,6 @@ import Icon from './icons/Icon';
 import ReactionAnimatedEmoji from './reactions/ReactionAnimatedEmoji';
 
 import './Composer.scss';
-import {textHistory} from '../middle/helpers/TextHistory';
-import {formattedText} from '../middle/helpers/FormattedText';
 
 type ComposerType = 'messageList' | 'story';
 
@@ -740,8 +740,8 @@ const Composer: FC<OwnProps & StateProps> = ({
 
   const resetComposer = useLastCallback((shouldPreserveInput = false) => {
     if (!shouldPreserveInput) {
-      textHistory.reinit()
-      formattedText.reinit()
+      textHistory.reinit();
+      formattedText.reinit();
       setHtml('');
     }
 

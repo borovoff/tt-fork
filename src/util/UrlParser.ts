@@ -1,76 +1,77 @@
-import {ApiMessageEntityMentionName, ApiMessageEntityTextUrl, ApiMessageEntityTypes} from "../api/types";
-import {CutEntity} from "./BaseParser";
-import {SpecialParser} from "./SpecialParser";
+import type { ApiMessageEntityMentionName, ApiMessageEntityTextUrl } from '../api/types';
+import type { CutEntity } from './BaseParser';
+import { ApiMessageEntityTypes } from '../api/types';
 
+import { SpecialParser } from './SpecialParser';
 
 export class UrlParser extends SpecialParser {
-  protected maxLength = 100
+  protected maxLength = 100;
 
   constructor(text: string, entity: CutEntity, i: number) {
-    super(text, entity, i)
+    super(text, entity, i);
   }
 
   getEntity() {
-    this.parse()
+    this.parse();
 
-    return { e: this.entity, offset: this.i - this.startIndex }
+    return { e: this.entity, offset: this.i - this.startIndex };
   }
 
   private checkId(id: string) {
-    const regex = /^\d+$/
+    const regex = /^\d+$/;
     if (!regex.test(id)) {
-      this.error('Incorrect id')
+      this.error('Incorrect id');
     }
   }
 
   private checkUrl(url: string) {
     try {
-      new URL(url)
+      new URL(url);
     } catch {
-      this.error('Url is not valid')
+      this.error('Url is not valid');
     }
   }
 
   private endUrl = () => {
-    const url = this.text.slice(this.startIndex, this.i)
-    ++this.i
+    const url = this.text.slice(this.startIndex, this.i);
+    ++this.i;
     if (url) {
-      const emojiPrefix = 'tg://emoji?id='
+      const emojiPrefix = 'tg://emoji?id=';
       if (this.entity.type === ApiMessageEntityTypes.CustomEmoji && url.startsWith(emojiPrefix)) {
-        const id = url.replace(emojiPrefix, '')
-        this.checkId(id)
-        this.entity.documentId = id
+        const id = url.replace(emojiPrefix, '');
+        this.checkId(id);
+        this.entity.documentId = id;
 
-        return true
+        return true;
       }
 
       if (this.entity.type !== ApiMessageEntityTypes.CustomEmoji) {
-        const userPrefix = 'tg://user?id='
+        const userPrefix = 'tg://user?id=';
         if (url.startsWith(userPrefix)) {
-          const e = this.entity as ApiMessageEntityMentionName
-          const id = url.replace(userPrefix, '')
-          this.checkId(id)
-          e.userId = id
-          e.type = ApiMessageEntityTypes.MentionName
+          const e = this.entity as ApiMessageEntityMentionName;
+          const id = url.replace(userPrefix, '');
+          this.checkId(id);
+          e.userId = id;
+          e.type = ApiMessageEntityTypes.MentionName;
 
-          return true
+          return true;
         }
 
-        const e = this.entity as ApiMessageEntityTextUrl
-        this.checkUrl(url)
-        e.url = url
+        const e = this.entity as ApiMessageEntityTextUrl;
+        this.checkUrl(url);
+        e.url = url;
 
-        return true
+        return true;
       }
 
-      this.error('Wrong url syntax')
+      this.error('Wrong url syntax');
     } else {
-      this.error('The url is empty')
+      this.error('The url is empty');
     }
-  }
+  };
 
   protected charToAction = {
     '\\': this.escape,
-    ')': this.endUrl
-  }
+    ')': this.endUrl,
+  };
 }
