@@ -92,7 +92,7 @@ export function fixImageContent(fragment: HTMLDivElement) {
   });
 }
 
-// I commented several lines that inerfere with MarkdownV2
+// I removed several lines that inerfere with MarkdownV2
 // TODO: remove other unnecessary lines
 function parseMarkdown(html: string) {
   let parsedHtml = html.slice(0);
@@ -130,24 +130,6 @@ function parseMarkdown(html: string) {
     /(?!<(?:code|pre)[^<]*|<\/)\[([^\]\n]+)\]\(customEmoji:(\d+)\)(?![^<]*<\/(?:code|pre)>)/g,
     '<img alt="$1" data-document-id="$2">',
   );
-
-  // Other simple markdown
-  parsedHtml = parsedHtml.replace(
-    /(?!<(code|pre)[^<]*|<\/)[*]{2}([^*\n]+)[*]{2}(?![^<]*<\/(code|pre)>)/g,
-    '<b>$2</b>',
-  );
-  //parsedHtml = parsedHtml.replace(
-  //  /(?!<(code|pre)[^<]*|<\/)[_]{2}([^_\n]+)[_]{2}(?![^<]*<\/(code|pre)>)/g,
-  //  '<i>$2</i>',
-  //);
-  parsedHtml = parsedHtml.replace(
-    /(?!<(code|pre)[^<]*|<\/)[~]{2}([^~\n]+)[~]{2}(?![^<]*<\/(code|pre)>)/g,
-    '<s>$2</s>',
-  );
-  //parsedHtml = parsedHtml.replace(
-  //  /(?!<(code|pre)[^<]*|<\/)[|]{2}([^|\n]+)[|]{2}(?![^<]*<\/(code|pre)>)/g,
-  //  `<span data-entity-type="${ApiMessageEntityTypes.Spoiler}">$2</span>`,
-  //);
 
   return parsedHtml;
 }
