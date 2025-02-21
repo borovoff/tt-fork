@@ -1,6 +1,8 @@
 import {ApiFormattedText, ApiMessageEntity, ApiMessageEntityTypes} from "../../../api/types";
 import parseHtmlAsFormattedText from "../../../util/parseHtmlAsFormattedText";
 import {getTextWithEntitiesAsHtml} from "../../common/helpers/renderTextWithEntities";
+import {getSlicedEntities} from "./getSlicedEntities";
+import {sortEntities} from "./sortEntities";
 
 type Interval = { offset: number, length: number }
 type WeakApiMessageEntity = ApiMessageEntity & { url?: string }
@@ -51,31 +53,12 @@ export class FormattedText implements ApiFormattedText {
     })
   }
 
+  static getSliced(es?: ApiMessageEntity[]) {
+    return getSlicedEntities(es)
+  }
+
   private getSlicedEntities() {
-    let entities = this.entities?.map(e => ({ ...e})) ?? []
-
-    for (let i = 0; i < entities.length; i++) {
-      const { offset, length } = entities[i]
-      const newEntities = []
-      for (let j = i + 1; j < entities.length; j++) {
-        const innerEntity = entities[j]
-        const end = offset + length
-        if (innerEntity.offset < end) {
-          const innerEnd = innerEntity.offset + innerEntity.length
-          if (innerEnd > end) {
-            const newLength = end - innerEntity.offset
-            newEntities.push({ ...innerEntity, offset: end, length: innerEntity.length - newLength })
-            innerEntity.length = newLength
-          }
-        } else {
-          break
-        }
-      }
-      entities.push(...newEntities)
-      entities = FormattedText.ss(entities) ?? []
-    }
-
-    return entities
+    return FormattedText.getSliced(this.entities)
   }
 
   private isOverlapping(entity1: Interval, entity2: ApiMessageEntity) {
@@ -114,19 +97,19 @@ export class FormattedText implements ApiFormattedText {
     }
   }
 
-  private sort() {
-    this.entities = FormattedText.ss(this.entities)
+  private sortEntities() {
+    this.entities = FormattedText.sort(this.entities)
   }
 
-  static ss(entities?: ApiMessageEntity[]) {
-    return entities?.sort((e1, e2) => e1.offset - e2.offset || e2.length - e1.length)
+  static sort(entities?: ApiMessageEntity[]) {
+    return sortEntities(entities)
   }
 
   private pushSides(e1: ApiMessageEntity, e2: ApiMessageEntity, i: number) {
     this.entities?.splice(i, 1)
     if (e1.offset !== e2.offset || e1.length !== e2.length) {
       this.entities?.push(e1, e2)
-      this.sort()
+      this.sortEntities()
     }
   }
 
@@ -150,7 +133,7 @@ export class FormattedText implements ApiFormattedText {
     }, {})
 
     this.entities = Object.values(entityObject).reduce((accumulator, current) => ([...accumulator, ...current]), [])
-    this.sort()
+    this.sortEntities()
   }
 
   recalculateEntities(entity: ApiMessageEntity, add = true) {
@@ -184,7 +167,7 @@ export class FormattedText implements ApiFormattedText {
           this.pushSides(e1, e2, i)
           const offset = e1.offset + e1.length
           this.entities.push({ type, url, offset, length: e2.offset - offset })
-          this.sort()
+          this.sortEntities()
           return
         }
         this.pushSides(e1, e2, i)
@@ -200,7 +183,7 @@ export class FormattedText implements ApiFormattedText {
     }
 
     this.entities.push(entity)
-    this.sort()
+    this.sortEntities()
   }
 }
 

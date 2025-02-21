@@ -41,7 +41,6 @@ import {FormattedText, formattedText} from '../helpers/FormattedText';
 import {getRangeByOffset} from '../helpers/getRangeByOffset';
 import {textHistory} from '../helpers/TextHistory';
 import {MarkdownParser} from '../../../util/MarkdownParser';
-import {emoji, parseCode, parseTest, simpleTest, urlLink, verySimple} from '../../../util/test';
 import {getOffsetByRange} from '../helpers/getOffsetByRange';
 
 const CONTEXT_MENU_CLOSE_DELAY_MS = 100;
@@ -497,12 +496,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
   function handleChange(e: ChangeEvent<HTMLDivElement>) {
     const { innerHTML, textContent } = e.currentTarget;
 
-    //const parser = new MarkdownParser(parseCode)
-    //const ft = new FormattedText(parser.getFormattedText())
-    //console.log(innerHTML)
-    
     onUpdate(innerHTML === SAFARI_BR ? '' : innerHTML);
-    //onUpdate(innerHTML === SAFARI_BR ? '' : ft.getHtml());
 
     // Reset focus on the input to remove any active styling when input is cleared
     if (

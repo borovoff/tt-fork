@@ -1,4 +1,4 @@
-import {ApiMessageEntityBlockquote, ApiMessageEntityPre, ApiMessageEntityTypes} from "../api/types"
+import {ApiMessageEntity, ApiMessageEntityBlockquote, ApiMessageEntityPre, ApiMessageEntityTypes} from "../api/types"
 import {BaseParser, CutEntity, MarkdownSymbol, OpenEntities} from "./BaseParser"
 import {CodeParser} from "./CodeParser"
 import {UrlParser} from "./UrlParser"
@@ -8,9 +8,11 @@ export class MarkdownParser extends BaseParser {
   protected maxLength = 10000
   private openEntities: Partial<OpenEntities> = {}
   private entities: CutEntity[] = []
+  private initialText = ''
 
   constructor(text: string) {
     super(text)
+    this.initialText = text
     console.log(text)
   }
 
@@ -25,9 +27,11 @@ export class MarkdownParser extends BaseParser {
     } catch (e) {
       // TODO: here error can be highlighted in input
       console.error(e)
+
+      return { text: this.initialText }
     }
 
-    return { entities: this.entities, text: this.text }
+    return { entities: this.entities as ApiMessageEntity[], text: this.text }
   }
 
   private simple = (symbol: MarkdownSymbol) => {
@@ -41,7 +45,7 @@ export class MarkdownParser extends BaseParser {
   }
 
   private quote = () => {
-    if (this.charAt(-1) === '\n') {
+    if (this.charAt(-1) === '\n' || this.i === 0) {
       const quote = this.openEntities['>']
       this.slice(1)
       if (!quote) {
@@ -116,6 +120,7 @@ export class MarkdownParser extends BaseParser {
           (this.charAt(2) === '\n' || this.i + 2 === this.text.length)) {
         quote.canCollapse = true
         this.addEntity(quote, '>')
+        this.slice(2)
       } else {
         this.simple('||')
       }
