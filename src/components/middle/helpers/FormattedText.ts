@@ -123,11 +123,14 @@ export class FormattedText implements ApiFormattedText {
     }
   }
 
-  // TODO: fix types
   private unify() {
-    const entityObject = this.entities?.reduce((accumulator, current) => {
+    if (!this.entities) {
+      return;
+    }
+
+    const entityObject = this.entities.reduce((accumulator, current: WeakApiMessageEntity) => {
       const { type } = current;
-      if (Object.hasOwn(accumulator, type)) {
+      if (accumulator.hasOwnProperty(type)) {
         const entities = accumulator[type];
         const entity = entities[entities.length - 1];
         if ((entity.offset + entity.length === current.offset) && entity.url === current.url) {
@@ -140,7 +143,7 @@ export class FormattedText implements ApiFormattedText {
       }
 
       return { ...accumulator };
-    }, {});
+    }, {} as { [key in ApiMessageEntityTypes]: WeakApiMessageEntity[] });
 
     this.entities = Object.values(entityObject).reduce((accumulator, current) => ([...accumulator, ...current]), []);
     this.sortEntities();
