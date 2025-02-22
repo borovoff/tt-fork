@@ -1,13 +1,14 @@
 import type { ApiFormattedText, ApiMessageEntity } from '../../../api/types';
+import type { WeakApiMessageEntity } from './WeakApiMessageEntity';
 import { ApiMessageEntityTypes } from '../../../api/types';
 
 import parseHtmlAsFormattedText from '../../../util/parseHtmlAsFormattedText';
 import { getTextWithEntitiesAsHtml } from '../../common/helpers/renderTextWithEntities';
 import { getSlicedEntities } from './getSlicedEntities';
 import { sortEntities } from './sortEntities';
+import { unifyEntities } from './unifyEntities';
 
 type Interval = { offset: number; length: number };
-type WeakApiMessageEntity = ApiMessageEntity & { url?: string };
 
 export class FormattedText implements ApiFormattedText {
   text: string;
@@ -124,29 +125,7 @@ export class FormattedText implements ApiFormattedText {
   }
 
   private unify() {
-    if (!this.entities) {
-      return;
-    }
-
-    const entityObject = this.entities.reduce((accumulator, current: WeakApiMessageEntity) => {
-      const { type } = current;
-      if (accumulator.hasOwnProperty(type)) {
-        const entities = accumulator[type];
-        const entity = entities[entities.length - 1];
-        if ((entity.offset + entity.length === current.offset) && entity.url === current.url) {
-          entity.length += current.length;
-        } else {
-          entities.push(current);
-        }
-      } else {
-        accumulator[type] = [current];
-      }
-
-      return { ...accumulator };
-    }, {} as { [key in ApiMessageEntityTypes]: WeakApiMessageEntity[] });
-
-    this.entities = Object.values(entityObject).reduce((accumulator, current) => ([...accumulator, ...current]), []);
-    this.sortEntities();
+    this.entities = unifyEntities(this.entities);
   }
 
   recalculateEntities(entity: ApiMessageEntity, add = true) {

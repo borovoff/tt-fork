@@ -3,6 +3,9 @@ import { ApiMessageEntityTypes } from '../api/types';
 
 import { SpecialParser } from './SpecialParser';
 
+export const emojiPrefix = 'tg://emoji?id=';
+export const userPrefix = 'tg://user?id=';
+
 export class UrlParser extends SpecialParser {
   protected maxLength = 100;
 
@@ -32,7 +35,6 @@ export class UrlParser extends SpecialParser {
     const url = this.text.slice(this.startIndex, this.i);
     ++this.i;
     if (url) {
-      const emojiPrefix = 'tg://emoji?id=';
       if (this.entity.type === ApiMessageEntityTypes.CustomEmoji && url.startsWith(emojiPrefix)) {
         const id = url.replace(emojiPrefix, '');
         this.checkId(id);
@@ -42,7 +44,6 @@ export class UrlParser extends SpecialParser {
       }
 
       if (this.entity.type !== ApiMessageEntityTypes.CustomEmoji) {
-        const userPrefix = 'tg://user?id=';
         if (url.startsWith(userPrefix)) {
           const e = this.entity as ApiMessageEntityMentionName;
           const id = url.replace(userPrefix, '');

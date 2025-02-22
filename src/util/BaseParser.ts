@@ -4,7 +4,7 @@ import { ApiMessageEntityTypes } from '../api/types';
 type ActionsAndSyntax<M> = Record<'*' | '_' | '~' | '>' | '`' | '[', M>;
 type OnlyAction<M> = Record<'\\' | '\n' | ']' | '|', M>;
 type OnlySyntax<M> = Record<'__' | '```' | '||', M>;
-type CharActions<M> = ActionsAndSyntax<M> & OnlyAction<M>;
+export type CharActions<M> = ActionsAndSyntax<M> & OnlyAction<M>;
 type SyntaxSymbols<M> = ActionsAndSyntax<M> & OnlySyntax<M>;
 
 export type CutEntity = Pick<ApiMessageEntity, 'type' | 'offset' | 'length'> & Partial<ApiMessageEntity>;

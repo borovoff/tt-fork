@@ -1,10 +1,17 @@
-import { ApiMessageEntityTypes } from '../src/api/types';
+import { ApiFormattedText, ApiMessageEntityTypes } from '../src/api/types';
+import {unifyEntities} from '../src/components/middle/helpers/unifyEntities';
+import {formattedTextToMarkdown} from '../src/util/formattedTextToMarkdown';
 
 import { MarkdownParser } from '../src/util/MarkdownParser';
 
 const parseMarkdownV2 = (t: string) => {
   const { entities, text } = new MarkdownParser(t).getFormattedText();
   return { text, entities };
+};
+
+const insertEntities = (ft: unknown) => {
+  const { text, entities } = ft as ApiFormattedText;
+  return formattedTextToMarkdown({ text, entities: unifyEntities(entities) });
 };
 
 describe('MarkdownV2 Parser', () => {
@@ -21,6 +28,7 @@ describe('MarkdownV2 Parser', () => {
       ],
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual(input);
   });
 
   test('Italic Text', () => {
@@ -36,6 +44,7 @@ describe('MarkdownV2 Parser', () => {
       ],
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual(input);
   });
 
   test('Underlined Text', () => {
@@ -66,6 +75,7 @@ describe('MarkdownV2 Parser', () => {
       ],
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual(input);
   });
 
   test('Inline Code', () => {
@@ -84,7 +94,7 @@ describe('MarkdownV2 Parser', () => {
   });
 
   test('Preformatted Code Block', () => {
-    const input = '```preformatted code```';
+    const input = '```\npreformatted code\n```';
     const expected = {
       text: 'preformatted code',
       entities: [
@@ -92,10 +102,12 @@ describe('MarkdownV2 Parser', () => {
           type: ApiMessageEntityTypes.Pre,
           offset: 0,
           length: 17,
+          language: '',
         },
       ],
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual(input);
   });
 
   test('Links', () => {
@@ -112,6 +124,7 @@ describe('MarkdownV2 Parser', () => {
       ],
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual(input);
   });
 
   test('Escaping Special Characters', () => {
@@ -121,6 +134,7 @@ describe('MarkdownV2 Parser', () => {
       entities: undefined,
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual(input);
   });
 
   test('Mixed Formatting', () => {
@@ -146,6 +160,7 @@ describe('MarkdownV2 Parser', () => {
       ],
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual(input);
   });
 
   test('Nested Formatting', () => {
@@ -166,6 +181,7 @@ describe('MarkdownV2 Parser', () => {
       ],
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual(input);
   });
 
   test('Multiple Lines', () => {
@@ -186,6 +202,7 @@ describe('MarkdownV2 Parser', () => {
       ],
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual(input);
   });
 
   test('Empty Input', () => {
@@ -195,6 +212,7 @@ describe('MarkdownV2 Parser', () => {
       entities: undefined,
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual(input);
   });
 
   test('Invalid Formatting', () => {
@@ -204,6 +222,7 @@ describe('MarkdownV2 Parser', () => {
       entities: undefined,
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual('\\*unclosed bold');
   });
 
   test('Special Characters in Text', () => {
@@ -254,6 +273,7 @@ describe('MarkdownV2 Parser', () => {
       ],
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual(input);
   });
 
   test('Telegram example urls', () => {
@@ -275,6 +295,7 @@ describe('MarkdownV2 Parser', () => {
       ],
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual(input);
   });
 
   test('Telegram example simple', () => {
@@ -285,6 +306,7 @@ describe('MarkdownV2 Parser', () => {
       entities: [{ type: 'MessageEntityBold', offset: 0, length: 10 }],
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual(input);
   });
 
   test('Telegram example nested without blocks', () => {
@@ -316,6 +338,7 @@ bold italic bold italic bold strikethrough italic bold strikethrough spoiler und
       ],
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual(input);
   });
 
   test('Telegram example code', () => {
@@ -345,6 +368,7 @@ in Python programming language`,
       ],
     };
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual(input);
   });
 
   test('Telegram example full', () => {
@@ -430,5 +454,6 @@ The last line of the expandable block quotation with the expandability mark`,
     };
 
     expect(parseMarkdownV2(input)).toEqual(expected);
+    expect(insertEntities(expected)).toEqual(input);
   });
 });
