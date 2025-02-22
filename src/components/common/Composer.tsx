@@ -165,6 +165,8 @@ import SendAsMenu from '../middle/composer/SendAsMenu.async';
 import StickerTooltip from '../middle/composer/StickerTooltip.async';
 import SymbolMenuButton from '../middle/composer/SymbolMenuButton';
 import WebPagePreview from '../middle/composer/WebPagePreview';
+import { formattedText } from '../middle/helpers/FormattedText';
+import { textHistory } from '../middle/helpers/TextHistory';
 import MessageEffect from '../middle/message/MessageEffect';
 import ReactionSelector from '../middle/message/reactions/ReactionSelector';
 import Button from '../ui/Button';
@@ -738,6 +740,8 @@ const Composer: FC<OwnProps & StateProps> = ({
 
   const resetComposer = useLastCallback((shouldPreserveInput = false) => {
     if (!shouldPreserveInput) {
+      textHistory.reinit();
+      formattedText.reinit();
       setHtml('');
     }
 
@@ -1033,8 +1037,6 @@ const Composer: FC<OwnProps & StateProps> = ({
       }
     }
 
-    const { text, entities } = parseHtmlAsFormattedText(getHtml());
-
     if (currentAttachments.length) {
       sendAttachments({
         attachments: currentAttachments,
@@ -1043,6 +1045,8 @@ const Composer: FC<OwnProps & StateProps> = ({
       });
       return;
     }
+
+    const { text, entities } = parseHtmlAsFormattedText(getHtml());
 
     if (!text && !isForwarding) {
       return;

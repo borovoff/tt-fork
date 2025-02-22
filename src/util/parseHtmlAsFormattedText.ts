@@ -4,6 +4,8 @@ import { ApiMessageEntityTypes } from '../api/types';
 import { RE_LINK_TEMPLATE } from '../config';
 import { IS_EMOJI_SUPPORTED } from './windowEnvironment';
 
+import { MarkdownParser } from './MarkdownParser';
+
 export const ENTITY_CLASS_BY_NODE_NAME: Record<string, ApiMessageEntityTypes> = {
   B: ApiMessageEntityTypes.Bold,
   STRONG: ApiMessageEntityTypes.Bold,
@@ -19,16 +21,18 @@ export const ENTITY_CLASS_BY_NODE_NAME: Record<string, ApiMessageEntityTypes> = 
   BLOCKQUOTE: ApiMessageEntityTypes.Blockquote,
 };
 
-const MAX_TAG_DEEPNESS = 3;
+const MAX_TAG_DEEPNESS = 30;
 
 export default function parseHtmlAsFormattedText(
-  html: string, withMarkdownLinks = false, skipMarkdown = false,
+  html: string, withMarkdownLinks = false, skipMarkdown = false, trim = true,
 ): ApiFormattedText {
   const fragment = document.createElement('div');
   fragment.innerHTML = skipMarkdown ? html
     : withMarkdownLinks ? parseMarkdown(parseMarkdownLinks(html)) : parseMarkdown(html);
   fixImageContent(fragment);
-  const text = fragment.innerText.trim().replace(/\u200b+/g, '');
+  const { innerText } = fragment;
+  const t = trim ? innerText.trim() : innerText;
+  const text = t.replace(/\u200b+/g, '');
   const trimShift = fragment.innerText.indexOf(text[0]);
   let textIndex = -trimShift;
   let recursionDeepness = 0;
@@ -60,9 +64,22 @@ export default function parseHtmlAsFormattedText(
     addEntity(node);
   });
 
+  if (entities.length) {
+    return {
+      text,
+      entities,
+    };
+  }
+
+  // It will work only if it can parse the whole markdown without problem (wrong syntax or open tags)
+  // I think it is good approach because it is for users who knows what to do
+  // For others better to do not have bold if they want to send kiss *
+  // Also in dev env I faced with errors when try to send example message from here https://core.telegram.org/bots/api
+  // Because of user IDies, I don't know how to validate it, please use with caution
+  const ft = new MarkdownParser(text).getFormattedText();
   return {
-    text,
-    entities: entities.length ? entities : undefined,
+    text: ft.text,
+    entities: ft.entities,
   };
 }
 
@@ -76,6 +93,8 @@ export function fixImageContent(fragment: HTMLDivElement) {
   });
 }
 
+// I removed several lines that inerfere with MarkdownV2
+// TODO: remove other unnecessary lines
 function parseMarkdown(html: string) {
   let parsedHtml = html.slice(0);
 
@@ -111,24 +130,6 @@ function parseMarkdown(html: string) {
   parsedHtml = parsedHtml.replace(
     /(?!<(?:code|pre)[^<]*|<\/)\[([^\]\n]+)\]\(customEmoji:(\d+)\)(?![^<]*<\/(?:code|pre)>)/g,
     '<img alt="$1" data-document-id="$2">',
-  );
-
-  // Other simple markdown
-  parsedHtml = parsedHtml.replace(
-    /(?!<(code|pre)[^<]*|<\/)[*]{2}([^*\n]+)[*]{2}(?![^<]*<\/(code|pre)>)/g,
-    '<b>$2</b>',
-  );
-  parsedHtml = parsedHtml.replace(
-    /(?!<(code|pre)[^<]*|<\/)[_]{2}([^_\n]+)[_]{2}(?![^<]*<\/(code|pre)>)/g,
-    '<i>$2</i>',
-  );
-  parsedHtml = parsedHtml.replace(
-    /(?!<(code|pre)[^<]*|<\/)[~]{2}([^~\n]+)[~]{2}(?![^<]*<\/(code|pre)>)/g,
-    '<s>$2</s>',
-  );
-  parsedHtml = parsedHtml.replace(
-    /(?!<(code|pre)[^<]*|<\/)[|]{2}([^|\n]+)[|]{2}(?![^<]*<\/(code|pre)>)/g,
-    `<span data-entity-type="${ApiMessageEntityTypes.Spoiler}">$2</span>`,
   );
 
   return parsedHtml;

@@ -13,7 +13,6 @@ import { ApiMessageEntityTypes } from '../../../api/types';
 import { RE_LINK_TEMPLATE } from '../../../config';
 import { selectNoWebPage, selectTabState, selectTheme } from '../../../global/selectors';
 import buildClassName from '../../../util/buildClassName';
-import parseHtmlAsFormattedText from '../../../util/parseHtmlAsFormattedText';
 
 import { useDebouncedResolver } from '../../../hooks/useAsyncResolvers';
 import useContextMenuHandlers from '../../../hooks/useContextMenuHandlers';
@@ -29,6 +28,8 @@ import Icon from '../../common/icons/Icon';
 import Button from '../../ui/Button';
 import Menu from '../../ui/Menu';
 import MenuItem from '../../ui/MenuItem';
+import { FormattedText, formattedText } from '../helpers/FormattedText';
+import { textHistory } from '../helpers/TextHistory';
 import WebPage from '../message/WebPage';
 
 import './WebPagePreview.scss';
@@ -80,24 +81,30 @@ const WebPagePreview: FC<OwnProps & StateProps> = ({
   const isSmallerMedia = attachmentSettings.webPageMediaSize === 'small';
 
   const detectLinkDebounced = useDebouncedResolver(() => {
-    const formattedText = parseHtmlAsFormattedText(getHtml());
-    const linkEntity = formattedText.entities?.find((entity): entity is ApiMessageEntityTextUrl => (
+    const ft = FormattedText.parse(getHtml());
+    if (formattedText.skipUpdate) {
+      formattedText.skipUpdate = false;
+    } else {
+      textHistory.add(ft, formattedText);
+      formattedText.reinit(ft);
+    }
+    const linkEntity = ft.entities?.find((entity): entity is ApiMessageEntityTextUrl => (
       entity.type === ApiMessageEntityTypes.TextUrl
     ));
 
-    formattedTextWithLinkRef.current = formattedText;
+    formattedTextWithLinkRef.current = ft;
 
-    return linkEntity?.url || formattedText.text.match(RE_LINK)?.[0];
+    return linkEntity?.url || ft.text.match(RE_LINK)?.[0];
   }, [getHtml], DEBOUNCE_MS, true);
 
   const getLink = useDerivedSignal(detectLinkDebounced, [detectLinkDebounced, getHtml], true);
 
   useEffect(() => {
     const link = getLink();
-    const formattedText = formattedTextWithLinkRef.current;
+    const ft = formattedTextWithLinkRef.current;
 
     if (link) {
-      loadWebPagePreview({ text: formattedText! });
+      loadWebPagePreview({ text: ft! });
     } else {
       clearWebPagePreview();
       toggleMessageWebPage({ chatId, threadId });

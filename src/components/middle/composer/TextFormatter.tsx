@@ -1,18 +1,20 @@
+import type { MutableRefObject, RefObject } from 'react';
 import type { FC } from '../../../lib/teact/teact';
 import React, {
   memo, useEffect, useRef, useState,
 } from '../../../lib/teact/teact';
 
+import type { ApiMessageEntityTypesDefault } from '../../../api/types';
 import type { IAnchorPosition } from '../../../types';
+import type { IconName } from '../../../types/icons';
 import { ApiMessageEntityTypes } from '../../../api/types';
 
-import { EDITABLE_INPUT_ID } from '../../../config';
 import buildClassName from '../../../util/buildClassName';
 import captureEscKeyListener from '../../../util/captureEscKeyListener';
 import { ensureProtocol } from '../../../util/ensureProtocol';
 import getKeyFromEvent from '../../../util/getKeyFromEvent';
 import stopEvent from '../../../util/stopEvent';
-import { INPUT_CUSTOM_EMOJI_SELECTOR } from './helpers/customEmoji';
+import { getOffsetByRange } from '../helpers/getOffsetByRange';
 
 import useFlag from '../../../hooks/useFlag';
 import useLastCallback from '../../../hooks/useLastCallback';
@@ -22,45 +24,44 @@ import useVirtualBackdrop from '../../../hooks/useVirtualBackdrop';
 
 import Icon from '../../common/icons/Icon';
 import Button from '../../ui/Button';
+import { formattedText } from '../helpers/FormattedText';
+import { textHistory } from '../helpers/TextHistory';
 
 import './TextFormatter.scss';
 
 export type OwnProps = {
+  selectionOffsetRef: MutableRefObject<{ offset: number; length: number }>;
+  inputRef: RefObject<HTMLDivElement>;
+  setHtml: (html: string) => void;
   isOpen: boolean;
   anchorPosition?: IAnchorPosition;
   selectedRange?: Range;
-  setSelectedRange: (range: Range) => void;
   onClose: () => void;
 };
 
-interface ISelectedTextFormats {
-  bold?: boolean;
-  italic?: boolean;
-  underline?: boolean;
-  strikethrough?: boolean;
-  monospace?: boolean;
-  spoiler?: boolean;
-}
-
-const TEXT_FORMAT_BY_TAG_NAME: Record<string, keyof ISelectedTextFormats> = {
-  B: 'bold',
-  STRONG: 'bold',
-  I: 'italic',
-  EM: 'italic',
-  U: 'underline',
-  DEL: 'strikethrough',
-  CODE: 'monospace',
-  SPAN: 'spoiler',
-};
-const fragmentEl = document.createElement('div');
+type FormatterApiMessageEntityTypes = ApiMessageEntityTypesDefault | ApiMessageEntityTypes.TextUrl
+| ApiMessageEntityTypes.Blockquote;
+type ISelectedTextFormats = { [key in FormatterApiMessageEntityTypes]?: boolean };
+type Formats = { type: FormatterApiMessageEntityTypes; text: string }[];
 
 const TextFormatter: FC<OwnProps> = ({
+  selectionOffsetRef,
+  inputRef,
+  setHtml,
   isOpen,
   anchorPosition,
   selectedRange,
-  setSelectedRange,
   onClose,
 }) => {
+  const formats: Formats = [
+    { type: ApiMessageEntityTypes.Bold, text: 'Bold' },
+    { type: ApiMessageEntityTypes.Italic, text: 'Italic' },
+    { type: ApiMessageEntityTypes.Underline, text: 'Underlined' },
+    { type: ApiMessageEntityTypes.Strike, text: 'Strikethrough' },
+    { type: ApiMessageEntityTypes.Code, text: 'Monospace' },
+    { type: ApiMessageEntityTypes.Spoiler, text: 'Spoiler' },
+    { type: ApiMessageEntityTypes.Blockquote, text: 'Quote' },
+  ];
   // eslint-disable-next-line no-null/no-null
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line no-null/no-null
@@ -68,7 +69,6 @@ const TextFormatter: FC<OwnProps> = ({
   const { shouldRender, transitionClassNames } = useShowTransitionDeprecated(isOpen);
   const [isLinkControlOpen, openLinkControl, closeLinkControl] = useFlag();
   const [linkUrl, setLinkUrl] = useState('');
-  const [isEditingLink, setIsEditingLink] = useState(false);
   const [inputClassName, setInputClassName] = useState<string | undefined>();
   const [selectedTextFormats, setSelectedTextFormats] = useState<ISelectedTextFormats>({});
 
@@ -78,6 +78,8 @@ const TextFormatter: FC<OwnProps> = ({
     containerRef,
     onClose,
     true,
+    undefined,
+    false,
   );
 
   useEffect(() => {
@@ -85,7 +87,6 @@ const TextFormatter: FC<OwnProps> = ({
       linkUrlInputRef.current!.focus();
     } else {
       setLinkUrl('');
-      setIsEditingLink(false);
     }
   }, [isLinkControlOpen]);
 
@@ -102,59 +103,19 @@ const TextFormatter: FC<OwnProps> = ({
       return;
     }
 
-    const selectedFormats: ISelectedTextFormats = {};
-    let { parentElement } = selectedRange.commonAncestorContainer;
-    while (parentElement && parentElement.id !== EDITABLE_INPUT_ID) {
-      const textFormat = TEXT_FORMAT_BY_TAG_NAME[parentElement.tagName];
-      if (textFormat) {
-        selectedFormats[textFormat] = true;
-      }
+    const { offset, length } = getOffsetByRange(inputRef.current, selectedRange);
+    const types = formattedText?.getActiveTypes({ offset, length });
 
-      parentElement = parentElement.parentElement;
+    if (types) {
+      const fs = types.reduce((accumulator, current) => {
+        if (current.type === ApiMessageEntityTypes.TextUrl) {
+          setLinkUrl(current.url);
+        }
+        return { ...accumulator, [current.type]: true };
+      }, {});
+      setSelectedTextFormats(fs);
     }
-
-    setSelectedTextFormats(selectedFormats);
-  }, [isOpen, selectedRange, openLinkControl]);
-
-  const restoreSelection = useLastCallback(() => {
-    if (!selectedRange) {
-      return;
-    }
-
-    const selection = window.getSelection();
-    if (selection) {
-      selection.removeAllRanges();
-      selection.addRange(selectedRange);
-    }
-  });
-
-  const updateSelectedRange = useLastCallback(() => {
-    const selection = window.getSelection();
-    if (selection) {
-      setSelectedRange(selection.getRangeAt(0));
-    }
-  });
-
-  const getSelectedText = useLastCallback((shouldDropCustomEmoji?: boolean) => {
-    if (!selectedRange) {
-      return undefined;
-    }
-    fragmentEl.replaceChildren(selectedRange.cloneContents());
-    if (shouldDropCustomEmoji) {
-      fragmentEl.querySelectorAll(INPUT_CUSTOM_EMOJI_SELECTOR).forEach((el) => {
-        el.replaceWith(el.getAttribute('alt')!);
-      });
-    }
-    return fragmentEl.innerHTML;
-  });
-
-  const getSelectedElement = useLastCallback(() => {
-    if (!selectedRange) {
-      return undefined;
-    }
-
-    return selectedRange.commonAncestorContainer.parentElement;
-  });
+  }, [isOpen, selectedRange, openLinkControl, inputRef]);
 
   function updateInputStyles() {
     const input = linkUrlInputRef.current;
@@ -185,183 +146,56 @@ const TextFormatter: FC<OwnProps> = ({
   }
 
   function getFormatButtonClassName(key: keyof ISelectedTextFormats) {
-    if (selectedTextFormats[key]) {
-      return 'active';
-    }
-
-    if (key === 'monospace' || key === 'strikethrough') {
-      if (Object.keys(selectedTextFormats).some(
-        (fKey) => fKey !== key && Boolean(selectedTextFormats[fKey as keyof ISelectedTextFormats]),
-      )) {
-        return 'disabled';
-      }
-    } else if (selectedTextFormats.monospace || selectedTextFormats.strikethrough) {
-      return 'disabled';
-    }
-
-    return undefined;
+    return selectedTextFormats[key] ? 'active' : undefined;
   }
 
-  const handleSpoilerText = useLastCallback(() => {
-    if (selectedTextFormats.spoiler) {
-      const element = getSelectedElement();
-      if (
-        !selectedRange
-        || !element
-        || element.dataset.entityType !== ApiMessageEntityTypes.Spoiler
-        || !element.textContent
-      ) {
-        return;
-      }
-
-      element.replaceWith(element.textContent);
-      setSelectedTextFormats((selectedFormats) => ({
-        ...selectedFormats,
-        spoiler: false,
-      }));
-
+  const handleChangeFormat = useLastCallback((type: FormatterApiMessageEntityTypes) => {
+    if (!selectedRange) {
       return;
     }
 
-    const text = getSelectedText();
-    document.execCommand(
-      'insertHTML', false, `<span class="spoiler" data-entity-type="${ApiMessageEntityTypes.Spoiler}">${text}</span>`,
-    );
-    onClose();
-  });
+    const isActive = selectedTextFormats[type];
 
-  const handleBoldText = useLastCallback(() => {
-    setSelectedTextFormats((selectedFormats) => {
-      // Somehow re-applying 'bold' command to already bold text doesn't work
-      document.execCommand(selectedFormats.bold ? 'removeFormat' : 'bold');
-      Object.keys(selectedFormats).forEach((key) => {
-        if ((key === 'italic' || key === 'underline') && Boolean(selectedFormats[key])) {
-          document.execCommand(key);
-        }
-      });
+    const { offset, length } = getOffsetByRange(inputRef.current, selectedRange);
+    selectionOffsetRef.current = { offset, length };
 
-      updateSelectedRange();
-      return {
-        ...selectedFormats,
-        bold: !selectedFormats.bold,
-      };
-    });
-  });
+    const { entities, text } = formattedText;
 
-  const handleItalicText = useLastCallback(() => {
-    document.execCommand('italic');
-    updateSelectedRange();
+    if (type === ApiMessageEntityTypes.TextUrl) {
+      const url = linkUrl ? (ensureProtocol(linkUrl) || '').split('%').map(encodeURI).join('%') : linkUrl;
+      formattedText.recalculateEntities({
+        type, offset, length, url,
+      }, !isActive);
+    } else {
+      formattedText.recalculateEntities({ type, offset, length }, !isActive);
+    }
+
+    textHistory.add(formattedText, { entities, text });
+    formattedText.skipUpdate = true;
+    const html = formattedText.getHtml();
+    setHtml(html);
+
     setSelectedTextFormats((selectedFormats) => ({
       ...selectedFormats,
-      italic: !selectedFormats.italic,
+      [type]: !isActive,
     }));
-  });
-
-  const handleUnderlineText = useLastCallback(() => {
-    document.execCommand('underline');
-    updateSelectedRange();
-    setSelectedTextFormats((selectedFormats) => ({
-      ...selectedFormats,
-      underline: !selectedFormats.underline,
-    }));
-  });
-
-  const handleStrikethroughText = useLastCallback(() => {
-    if (selectedTextFormats.strikethrough) {
-      const element = getSelectedElement();
-      if (
-        !selectedRange
-        || !element
-        || element.tagName !== 'DEL'
-        || !element.textContent
-      ) {
-        return;
-      }
-
-      element.replaceWith(element.textContent);
-      setSelectedTextFormats((selectedFormats) => ({
-        ...selectedFormats,
-        strikethrough: false,
-      }));
-
-      return;
-    }
-
-    const text = getSelectedText();
-    document.execCommand('insertHTML', false, `<del>${text}</del>`);
-    onClose();
-  });
-
-  const handleMonospaceText = useLastCallback(() => {
-    if (selectedTextFormats.monospace) {
-      const element = getSelectedElement();
-      if (
-        !selectedRange
-        || !element
-        || element.tagName !== 'CODE'
-        || !element.textContent
-      ) {
-        return;
-      }
-
-      element.replaceWith(element.textContent);
-      setSelectedTextFormats((selectedFormats) => ({
-        ...selectedFormats,
-        monospace: false,
-      }));
-
-      return;
-    }
-
-    const text = getSelectedText(true);
-    document.execCommand('insertHTML', false, `<code class="text-entity-code" dir="auto">${text}</code>`);
-    onClose();
-  });
-
-  const handleLinkUrlConfirm = useLastCallback(() => {
-    const formattedLinkUrl = (ensureProtocol(linkUrl) || '').split('%').map(encodeURI).join('%');
-
-    if (isEditingLink) {
-      const element = getSelectedElement();
-      if (!element || element.tagName !== 'A') {
-        return;
-      }
-
-      (element as HTMLAnchorElement).href = formattedLinkUrl;
-
-      onClose();
-
-      return;
-    }
-
-    const text = getSelectedText(true);
-    restoreSelection();
-    document.execCommand(
-      'insertHTML',
-      false,
-      `<a href=${formattedLinkUrl} class="text-entity-link" dir="auto">${text}</a>`,
-    );
-    onClose();
   });
 
   const handleKeyDown = useLastCallback((e: KeyboardEvent) => {
     const HANDLERS_BY_KEY: Record<string, AnyToVoidFunction> = {
       k: openLinkControl,
-      b: handleBoldText,
-      u: handleUnderlineText,
-      i: handleItalicText,
-      m: handleMonospaceText,
-      s: handleStrikethroughText,
-      p: handleSpoilerText,
+      b: () => handleChangeFormat(ApiMessageEntityTypes.Bold),
+      u: () => handleChangeFormat(ApiMessageEntityTypes.Underline),
+      i: () => handleChangeFormat(ApiMessageEntityTypes.Italic),
+      m: () => handleChangeFormat(ApiMessageEntityTypes.Code),
+      s: () => handleChangeFormat(ApiMessageEntityTypes.Strike),
+      p: () => handleChangeFormat(ApiMessageEntityTypes.Spoiler),
+      '.': () => handleChangeFormat(ApiMessageEntityTypes.Blockquote),
     };
 
     const handler = HANDLERS_BY_KEY[getKeyFromEvent(e)];
 
-    if (
-      e.altKey
-      || !(e.ctrlKey || e.metaKey)
-      || !handler
-    ) {
+    if (e.altKey || !(e.ctrlKey || e.metaKey) || !handler) {
       return;
     }
 
@@ -382,7 +216,7 @@ const TextFormatter: FC<OwnProps> = ({
 
   function handleContainerKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key === 'Enter' && isLinkControlOpen) {
-      handleLinkUrlConfirm();
+      handleChangeFormat(ApiMessageEntityTypes.TextUrl);
       e.preventDefault();
     }
   }
@@ -416,64 +250,35 @@ const TextFormatter: FC<OwnProps> = ({
       onMouseDown={stopEvent}
     >
       <div className="TextFormatter-buttons">
-        <Button
-          color="translucent"
-          ariaLabel="Spoiler text"
-          className={getFormatButtonClassName('spoiler')}
-          onClick={handleSpoilerText}
-        >
-          <Icon name="eye-closed" />
-        </Button>
+        {formats.map((format) => (
+          <Button
+            key={format.type}
+            color="translucent"
+            ariaLabel={`${format.text} text`}
+            className={getFormatButtonClassName(format.type)}
+            onClick={() => handleChangeFormat(format.type)}
+          >
+            <Icon name={format.text.toLowerCase() as IconName} />
+          </Button>
+        ))}
         <div className="TextFormatter-divider" />
         <Button
           color="translucent"
-          ariaLabel="Bold text"
-          className={getFormatButtonClassName('bold')}
-          onClick={handleBoldText}
+          ariaLabel={lang('TextFormat.AddLinkTitle')}
+          className={getFormatButtonClassName(ApiMessageEntityTypes.TextUrl)}
+          onClick={openLinkControl}
         >
-          <Icon name="bold" />
-        </Button>
-        <Button
-          color="translucent"
-          ariaLabel="Italic text"
-          className={getFormatButtonClassName('italic')}
-          onClick={handleItalicText}
-        >
-          <Icon name="italic" />
-        </Button>
-        <Button
-          color="translucent"
-          ariaLabel="Underlined text"
-          className={getFormatButtonClassName('underline')}
-          onClick={handleUnderlineText}
-        >
-          <Icon name="underlined" />
-        </Button>
-        <Button
-          color="translucent"
-          ariaLabel="Strikethrough text"
-          className={getFormatButtonClassName('strikethrough')}
-          onClick={handleStrikethroughText}
-        >
-          <Icon name="strikethrough" />
-        </Button>
-        <Button
-          color="translucent"
-          ariaLabel="Monospace text"
-          className={getFormatButtonClassName('monospace')}
-          onClick={handleMonospaceText}
-        >
-          <Icon name="monospace" />
-        </Button>
-        <div className="TextFormatter-divider" />
-        <Button color="translucent" ariaLabel={lang('TextFormat.AddLinkTitle')} onClick={openLinkControl}>
           <Icon name="link" />
         </Button>
       </div>
 
       <div className="TextFormatter-link-control">
         <div className="TextFormatter-buttons">
-          <Button color="translucent" ariaLabel={lang('Cancel')} onClick={closeLinkControl}>
+          <Button
+            color="translucent"
+            ariaLabel={lang('Cancel')}
+            onClick={closeLinkControl}
+          >
             <Icon name="arrow-left" />
           </Button>
           <div className="TextFormatter-divider" />
@@ -501,7 +306,7 @@ const TextFormatter: FC<OwnProps> = ({
               color="translucent"
               ariaLabel={lang('Save')}
               className="color-primary"
-              onClick={handleLinkUrlConfirm}
+              onClick={() => handleChangeFormat(ApiMessageEntityTypes.TextUrl)}
             >
               <Icon name="check" />
             </Button>

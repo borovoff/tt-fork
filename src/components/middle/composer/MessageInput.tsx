@@ -7,9 +7,9 @@ import React, {
 } from '../../../lib/teact/teact';
 import { getActions, withGlobal } from '../../../global';
 
-import type { ApiInputMessageReplyInfo } from '../../../api/types';
 import type { IAnchorPosition, ISettings, ThreadId } from '../../../types';
 import type { Signal } from '../../../util/signals';
+import { type ApiInputMessageReplyInfo, ApiMessageEntityTypes } from '../../../api/types';
 
 import { EDITABLE_INPUT_ID } from '../../../config';
 import { requestForcedReflow, requestMutation } from '../../../lib/fasterdom/fasterdom';
@@ -21,9 +21,11 @@ import parseEmojiOnlyString from '../../../util/emoji/parseEmojiOnlyString';
 import focusEditableElement from '../../../util/focusEditableElement';
 import { debounce } from '../../../util/schedulers';
 import {
-  IS_ANDROID, IS_EMOJI_SUPPORTED, IS_IOS, IS_TOUCH_ENV,
+  IS_ANDROID, IS_EMOJI_SUPPORTED, IS_IOS, IS_SAFARI, IS_TOUCH_ENV,
 } from '../../../util/windowEnvironment';
 import renderText from '../../common/helpers/renderText';
+import { getOffsetByRange } from '../helpers/getOffsetByRange';
+import { getRangeByOffset } from '../helpers/getRangeByOffset';
 import { isSelectionInsideInput } from './helpers/selection';
 
 import useAppLayout from '../../../hooks/useAppLayout';
@@ -36,6 +38,8 @@ import useInputCustomEmojis from './hooks/useInputCustomEmojis';
 import Icon from '../../common/icons/Icon';
 import Button from '../../ui/Button';
 import TextTimer from '../../ui/TextTimer';
+import { formattedText } from '../helpers/FormattedText';
+import { textHistory } from '../helpers/TextHistory';
 import TextFormatter from './TextFormatter.async';
 
 const CONTEXT_MENU_CLOSE_DELAY_MS = 100;
@@ -176,6 +180,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
   const [isTextFormatterDisabled, setIsTextFormatterDisabled] = useState<boolean>(false);
   const { isMobile } = useAppLayout();
   const isMobileDevice = isMobile && (IS_IOS || IS_ANDROID);
+  const selectionOffsetRef = useRef({ offset: 0, length: 0 });
 
   const [shouldDisplayTimer, setShouldDisplayTimer] = useState(false);
 
@@ -240,12 +245,35 @@ const MessageInput: FC<OwnProps & StateProps> = ({
     updateInputHeight(false);
   }, [isAttachmentModalInput, updateInputHeight]);
 
+  const addRange = (range: Range) => {
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  };
+
   const htmlRef = useRef(getHtml());
   useLayoutEffect(() => {
     const html = isActive ? getHtml() : '';
-
     if (html !== inputRef.current!.innerHTML) {
       inputRef.current!.innerHTML = html;
+
+      const { offset, length } = selectionOffsetRef.current;
+      const {
+        startContainer, endContainer, startOffset, endOffset,
+      } = getRangeByOffset(inputRef.current, offset, offset + length);
+      if (selectedRange) {
+        selectedRange.setStart(startContainer, startOffset);
+        selectedRange.setEnd(endContainer, endOffset);
+      }
+
+      // In some cases selectedRange is not working, new range has to be added
+      // TODO: probably it should be reworked
+      if (!selectedRange || selectedRange.collapsed || formattedText.skipUpdate) {
+        const range = new Range();
+        range.setStart(startContainer, startOffset);
+        range.setEnd(endContainer, endOffset);
+        addRange(range);
+      }
     }
 
     if (html !== cloneRef.current!.innerHTML) {
@@ -257,7 +285,7 @@ const MessageInput: FC<OwnProps & StateProps> = ({
 
       updateInputHeight(!html);
     }
-  }, [getHtml, isActive, updateInputHeight]);
+  }, [getHtml, isActive, updateInputHeight, selectedRange]);
 
   const chatIdRef = useRef(chatId);
   chatIdRef.current = chatId;
@@ -280,11 +308,6 @@ const MessageInput: FC<OwnProps & StateProps> = ({
   });
 
   function checkSelection() {
-    // Disable the formatter on iOS devices for now.
-    if (IS_IOS) {
-      return false;
-    }
-
     const selection = window.getSelection();
     if (!selection || !selection.rangeCount || isContextMenuOpenRef.current) {
       closeTextFormatter();
@@ -379,6 +402,47 @@ const MessageInput: FC<OwnProps & StateProps> = ({
     document.addEventListener('keydown', handleCloseContextMenu);
   }
 
+  const tryToRunOut = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    e.target.addEventListener('keyup', processSelectionWithTimeout, { once: true });
+
+    if (!inputRef.current) {
+      return;
+    }
+
+    const range = window.getSelection()!.getRangeAt(0);
+    const { offset } = getOffsetByRange(inputRef.current, range);
+    if (offset === formattedText.text.length) {
+      const types = formattedText.getTypesByOffset(offset);
+      if (types?.length) {
+        let symbol = ' ';
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          symbol = '\n';
+        }
+        const textNode = document.createTextNode(symbol);
+        inputRef.current.append(textNode);
+        range.selectNode(textNode);
+        range.collapse(false);
+        addRange(range);
+        return true;
+      }
+    }
+  };
+
+  const safariQuoutNewLine = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!IS_SAFARI) {
+      return;
+    }
+
+    const range = window.getSelection()!.getRangeAt(0);
+    const { offset } = getOffsetByRange(inputRef.current, range);
+    const types = formattedText.getTypesByOffset(offset);
+    if (types?.find((entity) => entity.type === ApiMessageEntityTypes.Blockquote)) {
+      e.preventDefault();
+      document.execCommand('insertHTML', false, '\n');
+    }
+  };
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     // https://levelup.gitconnected.com/javascript-events-handlers-keyboard-and-load-events-1b3e46a6b0c3#1960
     const { isComposing } = e;
@@ -395,21 +459,37 @@ const MessageInput: FC<OwnProps & StateProps> = ({
     }
 
     if (!isComposing && e.key === 'Enter' && !e.shiftKey) {
-      if (
-        !isMobileDevice
-        && (
-          (messageSendKeyCombo === 'enter' && !e.shiftKey)
-          || (messageSendKeyCombo === 'ctrl-enter' && (e.ctrlKey || e.metaKey))
-        )
-      ) {
+      if (!isMobileDevice
+          && ((messageSendKeyCombo === 'enter' && !e.shiftKey)
+          || (messageSendKeyCombo === 'ctrl-enter' && (e.ctrlKey || e.metaKey)))) {
         e.preventDefault();
 
         closeTextFormatter();
         onSend();
+      } else if (isMobileDevice) {
+        tryToRunOut(e) ?? safariQuoutNewLine(e);
       }
+    } else if (e.key === 'Enter' && e.shiftKey) {
+      tryToRunOut(e) ?? safariQuoutNewLine(e);
+    } else if (e.key === 'ArrowRight') {
+      tryToRunOut(e);
     } else if (!isComposing && e.key === 'ArrowUp' && !html && !e.metaKey && !e.ctrlKey && !e.altKey) {
       e.preventDefault();
       editLastMessage();
+    } else if ((e.metaKey || e.ctrlKey) && e.code === 'KeyZ') {
+      e.preventDefault();
+      const result = e.shiftKey ? textHistory.next(formattedText) : textHistory.previous(formattedText);
+      if (result) {
+        handleCloseTextFormatter();
+        const {
+          text, entities, offset, length,
+        } = result;
+        formattedText.entities = entities;
+        formattedText.text = text;
+        selectionOffsetRef.current = { offset, length };
+        formattedText.skipUpdate = true;
+        onUpdate(formattedText.getHtml());
+      }
     } else {
       e.target.addEventListener('keyup', processSelectionWithTimeout, { once: true });
     }
@@ -631,10 +711,12 @@ const MessageInput: FC<OwnProps & StateProps> = ({
         </div>
       )}
       <TextFormatter
+        selectionOffsetRef={selectionOffsetRef}
+        inputRef={inputRef}
+        setHtml={onUpdate}
         isOpen={isTextFormatterOpen}
         anchorPosition={textFormatterAnchorPosition}
         selectedRange={selectedRange}
-        setSelectedRange={setSelectedRange}
         onClose={handleCloseTextFormatter}
       />
       {forcedPlaceholder && <span className="forced-placeholder">{renderText(forcedPlaceholder!)}</span>}
